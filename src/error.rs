@@ -5,9 +5,9 @@ use {
         runtime::{
             global::GlobalError,
             table::TableError,
+            memory::MemoryError,
         },
         linker::InstantiateError,
-        mem::MemError,
         trap::Trap,
     },
     std::{error, fmt},
@@ -20,7 +20,7 @@ pub enum Error {
     Instantiate(InstantiateError),
     Func(FuncError),
     Table(TableError),
-    Memory(MemError),
+    Memory(MemoryError),
     Global(GlobalError),
     Trap(Trap),
 }
@@ -77,8 +77,8 @@ impl From<TableError> for Error {
     }
 }
 
-impl From<MemError> for Error {
-    fn from(error: MemError) -> Self {
+impl From<MemoryError> for Error {
+    fn from(error: MemoryError) -> Self {
         Error::Memory(error)
     }
 }

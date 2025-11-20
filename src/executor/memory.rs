@@ -2,7 +2,7 @@
 
 use {
     super::*,
-    crate::mem::UnguardedMem,
+    crate::runtime::memory::UnguardedMem,
 };
 
 pub(crate) unsafe extern "C" fn load<T, R, W>(

@@ -7,14 +7,14 @@ impl<'a> Validator<'a> {
     pub(crate) fn validate_table_get(&mut self, table_idx: u32) -> Result<(), DecodeError> {
         let ty = self.module.table(table_idx)?;
         self.pop_opd()?.check(ValType::I32)?;
-        self.push_opd(ty.elem);
+        self.push_opd(ty.element);
         Ok(())
     }
 
     /// Validates a `table.set` instruction.
     pub(crate) fn validate_table_set(&mut self, table_idx: u32) -> Result<(), DecodeError> {
         let ty = self.module.table(table_idx)?;
-        self.pop_opd()?.check(ty.elem)?;
+        self.pop_opd()?.check(ty.element)?;
         self.pop_opd()?.check(ValType::I32)?;
         Ok(())
     }
@@ -30,7 +30,7 @@ impl<'a> Validator<'a> {
     pub(crate) fn validate_table_grow(&mut self, table_idx: u32) -> Result<(), DecodeError> {
         let ty = self.module.table(table_idx)?;
         self.pop_opd()?.check(ValType::I32)?;
-        self.pop_opd()?.check(ty.elem)?;
+        self.pop_opd()?.check(ty.element)?;
         self.push_opd(ValType::I32);
         Ok(())
     }
@@ -39,7 +39,7 @@ impl<'a> Validator<'a> {
     pub(crate) fn validate_table_fill(&mut self, table_idx: u32) -> Result<(), DecodeError> {
         let ty = self.module.table(table_idx)?;
         self.pop_opd()?.check(ValType::I32)?;
-        self.pop_opd()?.check(ty.elem)?;
+        self.pop_opd()?.check(ty.element)?;
         self.pop_opd()?.check(ValType::I32)?;
         Ok(())
     }
@@ -52,7 +52,7 @@ impl<'a> Validator<'a> {
     ) -> Result<(), DecodeError> {
         let dst_type = self.module.table(dst_table_idx)?;
         let src_type = self.module.table(src_table_idx)?;
-        if dst_type.elem != src_type.elem {
+        if dst_type.element != src_type.element {
             return Err(DecodeError::new("type mismatch"));
         }
         self.pop_opd()?.check(ValType::I32)?;
@@ -65,7 +65,7 @@ impl<'a> Validator<'a> {
     pub(crate) fn validate_table_init(&mut self, table_idx: u32, elem_idx: u32) -> Result<(), DecodeError> {
         let dst_type = self.module.table(table_idx)?;
         let src_type = self.module.elem(elem_idx)?;
-        if dst_type.elem != src_type {
+        if dst_type.element != src_type {
             return Err(DecodeError::new("type mismatch"));
         }
         self.pop_opd()?.check(ValType::I32)?;

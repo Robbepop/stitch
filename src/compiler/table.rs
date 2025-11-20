@@ -14,7 +14,7 @@ impl<'a> Compiler<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.ty(&self.store).elem;
+        let elem_type = table.ty(&self.store).element;
 
         // Emit the instruction.
         self.emit_instr(select_table_get(elem_type, self.opd(0).kind()));
@@ -43,7 +43,7 @@ impl<'a> Compiler<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.ty(&self.store).elem;
+        let elem_type = table.ty(&self.store).element;
 
         // Emit the instruction.
         self.emit_instr(select_table_set(
@@ -75,7 +75,7 @@ impl<'a> Compiler<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.ty(&self.store).elem;
+        let elem_type = table.ty(&self.store).element;
 
         // Emit the instruction.
         self.emit_instr(select_table_size(elem_type));
@@ -101,7 +101,7 @@ impl<'a> Compiler<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.ty(&self.store).elem;
+        let elem_type = table.ty(&self.store).element;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constant nor register
@@ -141,7 +141,7 @@ impl<'a> Compiler<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.ty(&self.store).elem;
+        let elem_type = table.ty(&self.store).element;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constants nor stored in a
@@ -182,7 +182,7 @@ impl<'a> Compiler<'a> {
         let src_table = self.instance.table(src_table_idx).unwrap();
 
         // Obtain the type of the elements in the destination [`Table`].
-        let elem_type = dst_table.ty(&self.store).elem;
+        let elem_type = dst_table.ty(&self.store).element;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constant nor register
@@ -224,7 +224,7 @@ impl<'a> Compiler<'a> {
         let src_elem = self.instance.elem(src_elem_idx).unwrap();
 
         // Obtain the type of the elements in the destination [`Table`].
-        let elem_type = dst_table.ty(&self.store).elem;
+        let elem_type = dst_table.ty(&self.store).element;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constant nor register

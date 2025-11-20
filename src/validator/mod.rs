@@ -340,7 +340,7 @@ impl<'a> InstrVisitor for Validator<'a> {
 
     fn visit_call_indirect(&mut self, table_idx: u32, type_idx: u32) -> Result<(), Self::Error> {
         let table_type = self.module.table(table_idx)?;
-        if table_type.elem != RefType::FuncRef {
+        if table_type.element != RefType::FuncRef {
             return Err(DecodeError::new("type mismatch"));
         }
         let type_ = self.module.type_(type_idx)?;

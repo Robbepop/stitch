@@ -11,12 +11,12 @@ use {
         func::{UncompiledFuncBody, Func, FuncType},
         runtime::{
             global::{Global, GlobalType},
+            memory::{Memory, MemoryType},
             table::{Table, TableType},
         },
         guarded::Guarded,
         instance::{Instance, InstanceIniter},
         linker::{InstantiateError, Linker},
-        mem::{Mem, MemType},
         ref_::{Ref, RefType},
         store::Store,
         trap::Trap,
@@ -40,7 +40,7 @@ pub struct Module {
     imported_global_count: usize,
     func_types: Box<[FuncType]>,
     table_types: Box<[TableType]>,
-    memory_types: Box<[MemType]>,
+    memory_types: Box<[MemoryType]>,
     global_types: Box<[GlobalType]>,
     global_vals: Box<[ConstExpr]>,
     exports: HashMap<Arc<str>, ExternValDesc>,
@@ -290,10 +290,10 @@ impl Module {
             }
         }
         for type_ in self.internal_tables() {
-            initer.push_table(Table::new(store, type_, Ref::null(type_.elem)).unwrap());
+            initer.push_table(Table::new(store, type_, Ref::null(type_.element)).unwrap());
         }
         for type_ in self.internal_memories() {
-            initer.push_mem(Mem::new(store, type_));
+            initer.push_mem(Memory::new(store, type_));
         }
         for ((type_, _), init_val) in self.internal_globals().zip(global_init_vals) {
             initer.push_global(Global::new(store, type_, init_val)?);
@@ -375,7 +375,7 @@ impl Module {
         self.table_types.get(idx).copied()
     }
 
-    fn memory(&self, idx: u32) -> Option<MemType> {
+    fn memory(&self, idx: u32) -> Option<MemoryType> {
         let idx = usize::try_from(idx).unwrap();
         self.memory_types.get(idx).copied()
     }
@@ -406,7 +406,7 @@ impl Module {
             .copied()
     }
 
-    fn internal_memories(&self) -> impl Iterator<Item = MemType> + '_ {
+    fn internal_memories(&self) -> impl Iterator<Item = MemoryType> + '_ {
         self.memory_types[self.imported_memory_count..]
             .iter()
             .copied()
@@ -426,7 +426,7 @@ pub struct ModuleImports<'a> {
     imports: slice::Iter<'a, ((Arc<str>, Arc<str>), ImportKind)>,
     imported_func_types: slice::Iter<'a, FuncType>,
     imported_table_types: slice::Iter<'a, TableType>,
-    imported_memory_types: slice::Iter<'a, MemType>,
+    imported_memory_types: slice::Iter<'a, MemoryType>,
     imported_global_types: slice::Iter<'a, GlobalType>,
 }
 
@@ -478,7 +478,7 @@ pub(crate) struct ModuleBuilder {
     imported_global_count: usize,
     func_types: Vec<FuncType>,
     table_types: Vec<TableType>,
-    memory_types: Vec<MemType>,
+    memory_types: Vec<MemoryType>,
     global_types: Vec<GlobalType>,
     global_vals: Vec<ConstExpr>,
     exports: HashMap<Arc<str>, ExternValDesc>,
@@ -536,7 +536,7 @@ impl ModuleBuilder {
             .ok_or_else(|| DecodeError::new("unknown table"))
     }
 
-    pub(crate) fn memory(&self, idx: u32) -> Result<MemType, DecodeError> {
+    pub(crate) fn memory(&self, idx: u32) -> Result<MemoryType, DecodeError> {
         let idx = usize::try_from(idx).unwrap();
         self.memory_types
             .get(idx)
@@ -758,7 +758,7 @@ impl ModuleBuilder {
         } = elem.kind
         {
             let table = self.table(table_idx)?;
-            if elem.type_ != table.elem {
+            if elem.type_ != table.element {
                 return Err(DecodeError::new("type mismatch"));
             }
             if offset.validate(self)? != ValType::I32 {
@@ -888,7 +888,7 @@ impl Decode for TableDef {
 /// A definition for a [`Mem`].
 #[derive(Debug)]
 struct MemDef {
-    type_: MemType,
+    type_: MemoryType,
 }
 
 impl Decode for MemDef {

@@ -8,10 +8,10 @@ use {
         func::{FuncEntity, FuncType},
         runtime::{
             global::GlobalEntity,
+            memory::MemoryEntity,
             table::TableEntity,
         },
         guarded::Guarded,
-        mem::MemEntity,
     },
     std::{
         collections::HashMap,
@@ -29,7 +29,7 @@ pub struct Store {
     types: FuncTypeInterner,
     funcs: Vec<AliasableBox<FuncEntity>>,
     tables: Vec<AliasableBox<TableEntity>>,
-    mems: Vec<AliasableBox<MemEntity>>,
+    mems: Vec<AliasableBox<MemoryEntity>>,
     globals: Vec<AliasableBox<GlobalEntity>>,
     elems: Vec<AliasableBox<ElemEntity>>,
     datas: Vec<AliasableBox<DataEntity>>,
@@ -92,7 +92,7 @@ impl Store {
     /// Inserts the given [`MemEntity`] into this [`Store`].
     ///
     /// Returns a [`Handle`] to the inserted [`MemEntity`].
-    pub(crate) fn insert_mem(&mut self, mem: MemEntity) -> Handle<MemEntity> {
+    pub(crate) fn insert_memory(&mut self, mem: MemoryEntity) -> Handle<MemoryEntity> {
         let mem = AliasableBox::from_box(Box::new(mem));
         let handle = unsafe { Handle::from_unguarded(AliasableBox::as_non_null(&mem), self.id) };
         self.mems.push(mem);

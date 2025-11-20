@@ -20,7 +20,6 @@ mod instance;
 mod into_func;
 mod limits;
 mod linker;
-mod mem;
 mod module;
 mod ops;
 mod ref_;
@@ -40,12 +39,12 @@ pub use self::{
     func::{Func, FuncError, FuncType},
     runtime::{
         global::{Global, GlobalError, GlobalType, Mutability},
+        memory::{Memory, MemoryError, MemoryType},
         table::{Table, TableError, TableType},
     },
     instance::{Instance, InstanceExports},
     limits::Limits,
     linker::{InstantiateError, Linker},
-    mem::{Mem, MemError, MemType},
     module::{Module, ModuleExports, ModuleImports},
     ref_::{ExternRef, FuncRef, Ref, RefType},
     store::Store,

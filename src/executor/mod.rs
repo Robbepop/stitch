@@ -34,9 +34,11 @@ use {
         error::Error,
         extern_::UnguardedExtern,
         func::{Caller, Func, FuncBody, FuncEntity, FuncType, InstrSlot, UnguardedFunc},
-        runtime::table::UnguardedTable,
+        runtime::{
+            memory::UnguardedMem,
+            table::UnguardedTable,
+        },
         guarded::Guarded,
-        mem::UnguardedMem,
         ops::*,
         ref_::{FuncRef, UnguardedExternRef, UnguardedFuncRef},
         stack,

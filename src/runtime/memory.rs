@@ -5,7 +5,6 @@ use {
         executor::SavedRegs,
         func::Context,
         guarded::Guarded,
-        limits::Limits,
         stack::Stack,
         store::{Handle, HandlePair, Store, StoreGuard, UnguardedHandle},
         trap::Trap,
@@ -13,54 +12,55 @@ use {
     std::{error::Error, fmt},
 };
 
-/// A Wasm memory.
-#[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
+/// A WebAssembly memory.
+#[derive(Copy, Clone, Debug, Eq, Hash, PartialEq)]
 #[repr(transparent)]
-pub struct Mem(pub(crate) Handle<MemEntity>);
+pub struct Memory(pub(crate) Handle<MemoryEntity>);
 
-impl Mem {
-    /// Creates a new [`Mem`] with the given [`MemType`].
+impl Memory {
+    /// Creates a new [`Memory`] with the following parameters:
+    /// 
+    /// * `store` - the [`Store`] in which to create the new [`Memory`].
+    /// * `ty` - the [`MemoryType`] of the new [`Memory`].
     ///
     /// # Panics
     ///
-    /// If the given [`MemType`] is invalid.
-    pub fn new(store: &mut Store, type_: MemType) -> Self {
-        assert!(type_.is_valid(), "invalid memory type");
-        Self(store.insert_mem(MemEntity::new(type_)))
+    /// * If `ty` is invalid.
+    pub fn new(store: &mut Store, ty: MemoryType) -> Self {
+        assert!(ty.is_valid(), "invalid memory type");
+        Self(store.insert_memory(MemoryEntity::new(ty.minimum, ty.maximum)))
     }
 
-    /// Returns the [`MemType`] of this [`Mem`].
-    pub fn type_(self, store: &Store) -> MemType {
-        MemType {
-            limits: self.0.as_ref(store).limits(),
-        }
+    /// Returns the [`MemoryType`] of this [`Memory`]
+    pub fn type_(self, store: &Store) -> MemoryType {
+        self.0.as_ref(store).ty()
     }
 
-    /// Returns the bytes of this [`Mem`] as a slice.
+    /// Returns this [`Memory`]'s bytes as a slice.
     pub fn bytes(self, store: &Store) -> &[u8] {
         self.0.as_ref(store).bytes()
     }
 
-    /// Returns the bytes of this [`Mem`] as a mutable slice.
+    /// Returns this [`Memory`]'s bytes as a mutable slice.
     pub fn bytes_mut(self, store: &mut Store) -> &mut [u8] {
         self.0.as_mut(store).bytes_mut()
     }
 
-    /// Returns the size of this [`Mem`] in number of pages.
+    /// Returns this [`Memory`]'s current size.
     pub fn size(&self, store: &Store) -> u32 {
         self.0.as_ref(store).size()
     }
 
-    /// Grows this [`Mem`] by the given number of pages.
+    /// Grows this [`Memory`] by `num` pages.
     ///
-    /// Returns the previous size of this [`Mem`] in number of pages.
-    ///
+    /// Returns the previous size of this [`Memory`].
+    /// 
     /// # Errors
     ///
-    /// If this [`Mem`] failed to grow.
-    pub fn grow(self, mut context: impl Context, count: u32) -> Result<u32, MemError> {
-        let (context, stack) = context.into_parts();
-        self.0.as_mut(context).grow(stack, count)
+    /// If this [`Memory`] failed to grow.
+    pub fn grow(self, mut context: impl Context, num: u32) -> Result<u32, MemoryError> {
+        let (store, stack) = context.into_parts();
+        self.0.as_mut(store).grow(stack, num)
     }
 
     pub(crate) fn init(
@@ -76,7 +76,7 @@ impl Mem {
     }
 }
 
-impl Guarded for Mem {
+impl Guarded for Memory {
     type Unguarded = UnguardedMem;
     type Guard = StoreGuard;
 
@@ -90,36 +90,76 @@ impl Guarded for Mem {
 }
 
 /// An unguarded version of [`Mem`].
-pub(crate) type UnguardedMem = UnguardedHandle<MemEntity>;
+pub(crate) type UnguardedMem = UnguardedHandle<MemoryEntity>;
 
-/// The type of a [`Mem`].
+/// The type of a [`Memory`].
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
-pub struct MemType {
-    /// The [`Limits`] of this [`Mem`].
-    pub limits: Limits,
+pub struct MemoryType {
+    minimum: u32,
+    maximum: Option<u32>,
 }
 
-impl MemType {
-    /// Returns `true` if this [`MemType`] is valid.
-    ///
-    /// A [`MemType`] is valid if its [`Limits`] are valid within range 65_536.
-    pub fn is_valid(&self) -> bool {
-        self.limits.is_valid(65_536)
+impl MemoryType {
+    /// Creates a new [`MemoryType`] with the following parameters:
+    /// 
+    /// * `minimum` - The [`Memory`]'s minimum size.
+    /// * `maximum` - The [`Memory`]'s maximum size.
+    pub fn new(minimum: u32, maximum: Option<u32>) -> Self {
+        Self { minimum, maximum }
     }
 
-    /// Returns `true` if this [`MemType`] is a subtype of the given [`MemType`].
-    ///
-    /// A [`MemType`] is a subtype of another [`MemType`] if its [`Limits`] are a sublimit of the
-    /// other's.
-    pub fn is_subtype_of(self, other: Self) -> bool {
-        self.limits.is_sublimit_of(other.limits)
+    /// Returns the [`Memory`]'s minimum size.
+    pub fn minimum(&self) -> u32 {
+        self.minimum
+    }
+
+    /// Returns the [`Memory`]'s maximum size, if any.
+    pub fn maximum(&self) -> Option<u32> {
+        self.maximum
+    }
+
+    pub(crate) fn is_valid(&self) -> bool {
+        let maximum = if let Some(maximum) = self.maximum {
+            if maximum > 65_536 {
+                return false;
+            }
+            maximum
+        } else {
+            65_536
+        };
+        if self.minimum > maximum {
+            return false;
+        }  
+        true  
+    }
+
+    pub(crate) fn is_subtype_of(self, other: Self) -> bool {
+        if self.minimum < other.minimum {
+            return false;
+        }
+        match (self.maximum, other.maximum) {
+            (None, Some(_)) => return false,
+            (Some(maximum), Some(other_maximum)) if maximum > other_maximum => return false,
+            _ => ()
+        };
+        true
     }
 }
 
-impl Decode for MemType {
+impl Decode for MemoryType {
     fn decode(decoder: &mut Decoder<'_>) -> Result<Self, DecodeError> {
+        let has_maximum = match decoder.read_byte()? {
+            0x00 => false,
+            0x01 => true,
+            _ => return Err(DecodeError::new("invalid memory type")),
+        };
         Ok(Self {
-            limits: Limits::decode(decoder)?,
+            minimum: decoder.decode()?,
+            maximum: if has_maximum {
+                Some(decoder.decode()?)
+            } else {
+                None
+            },
         })
     }
 }
@@ -127,11 +167,11 @@ impl Decode for MemType {
 /// An error that can occur when operating on a [`Mem`].
 #[derive(Clone, Copy, Debug)]
 #[non_exhaustive]
-pub enum MemError {
+pub enum MemoryError {
     FailedToGrow,
 }
 
-impl fmt::Display for MemError {
+impl fmt::Display for MemoryError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::FailedToGrow => write!(f, "memory failed to grow"),
@@ -139,55 +179,43 @@ impl fmt::Display for MemError {
     }
 }
 
-impl Error for MemError {}
+impl Error for MemoryError {}
 
 /// The representation of a [`Mem`] in a [`Store`].
 #[derive(Debug)]
-pub(crate) struct MemEntity {
-    max: Option<u32>,
+pub(crate) struct MemoryEntity {
+    maximum: Option<u32>,
     bytes: Vec<u8>,
 }
 
-impl MemEntity {
-    /// Creates a new [`MemEntity`] with the given [`MemType`].
-    fn new(type_: MemType) -> Self {
+impl MemoryEntity {
+    fn new(minimum: u32, maximum: Option<u32>) -> Self {
         Self {
-            max: type_.limits.max,
-            bytes: vec![0; (type_.limits.min as usize).checked_mul(PAGE_SIZE).unwrap()],
+            maximum,
+            bytes: vec![0; (minimum as usize).checked_mul(PAGE_SIZE).unwrap()],
         }
     }
 
-    /// Returns the [`Limits`] of this [`MemEntity`].
-    fn limits(&self) -> Limits {
-        Limits {
-            min: self.size(),
-            max: self.max,
+    fn ty(&self) -> MemoryType {
+        MemoryType {
+            minimum: self.size(),
+            maximum: self.maximum,
         }
     }
 
-    /// Returns the bytes of this [`MemEntity`] as a slice.
     pub(crate) fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 
-    /// Returns the bytes of this [`MemEntity`] as a mutable slice.
     pub(crate) fn bytes_mut(&mut self) -> &mut [u8] {
         &mut self.bytes
     }
 
-    /// Returns the size of this [`MemEntity`] in number of pages.
     pub(crate) fn size(&self) -> u32 {
         u32::try_from(self.bytes.len() / PAGE_SIZE).unwrap()
     }
 
-    /// Grows this [`MemEntity`] by the given number of pages.
-    ///
-    /// Returns the previous size of this [`MemEntity`] in number of pages.
-    ///
-    /// # Errors
-    ///
-    /// If this [`MemEntity`] failed to grow.
-    pub(crate) fn grow(&mut self, stack: Option<&mut Stack>, count: u32) -> Result<u32, MemError> {
+    pub(crate) fn grow(&mut self, stack: Option<&mut Stack>, count: u32) -> Result<u32, MemoryError> {
         unsafe { self.grow_with_stack(count, stack) }
     }
 
@@ -195,9 +223,9 @@ impl MemEntity {
         &mut self,
         count: u32,
         stack: Option<&mut Stack>,
-    ) -> Result<u32, MemError> {
-        if count > self.max.unwrap_or(65_536) - self.size() {
-            return Err(MemError::FailedToGrow);
+    ) -> Result<u32, MemoryError> {
+        if count > self.maximum.unwrap_or(65_536) - self.size() {
+            return Err(MemoryError::FailedToGrow);
         }
         let old_data = self.bytes.as_mut_ptr();
         let old_size = self.size();
@@ -226,13 +254,11 @@ impl MemEntity {
         Ok(old_size)
     }
 
-    pub(crate) fn fill(&mut self, idx: u32, val: u8, count: u32) -> Result<(), Trap> {
-        let idx = idx as usize;
-        let count = count as usize;
+    pub(crate) fn fill(&mut self, idx: u32, val: u8, num: u32) -> Result<(), Trap> {
         let bytes = self
             .bytes
-            .get_mut(idx..)
-            .and_then(|bytes| bytes.get_mut(..count))
+            .get_mut(idx as usize..)
+            .and_then(|bytes| bytes.get_mut(..num as usize))
             .ok_or(Trap::MemAccessOutOfBounds)?;
         bytes.fill(val);
         Ok(())
@@ -242,18 +268,16 @@ impl MemEntity {
         &mut self,
         dst_idx: u32,
         src_idx: u32,
-        count: u32,
+        num: u32,
     ) -> Result<(), Trap> {
-        let dst_idx = dst_idx as usize;
-        let src_idx = src_idx as usize;
-        let count = count as usize;
-        if count > self.bytes.len()
-            || dst_idx > self.bytes.len() - count
-            || src_idx > self.bytes.len() - count
-        {
+        let size = self.bytes.len() as u32;
+        if num > size || dst_idx > size - num || src_idx > size - num {
             return Err(Trap::MemAccessOutOfBounds);
         }
-        self.bytes.copy_within(src_idx..src_idx + count, dst_idx);
+        self.bytes.copy_within(
+            src_idx as usize..src_idx as usize + num as usize,
+            dst_idx as usize
+        );
         Ok(())
     }
 
@@ -262,20 +286,17 @@ impl MemEntity {
         dst_idx: u32,
         src_data: &DataEntity,
         src_idx: u32,
-        count: u32,
+        num: u32,
     ) -> Result<(), Trap> {
-        let dst_idx = dst_idx as usize;
-        let src_idx = src_idx as usize;
-        let count = count as usize;
         let dst_bytes = self
             .bytes
-            .get_mut(dst_idx..)
-            .and_then(|bytes| bytes.get_mut(..count))
+            .get_mut(dst_idx as usize..)
+            .and_then(|bytes| bytes.get_mut(..num as usize))
             .ok_or(Trap::MemAccessOutOfBounds)?;
         let src_bytes = src_data
             .bytes()
-            .get(src_idx..)
-            .and_then(|bytes| bytes.get(..count))
+            .get(src_idx as usize..)
+            .and_then(|bytes| bytes.get(..num as usize))
             .ok_or(Trap::MemAccessOutOfBounds)?;
         dst_bytes.copy_from_slice(src_bytes);
         Ok(())

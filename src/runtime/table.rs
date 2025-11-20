@@ -53,11 +53,11 @@ impl Table {
         Ok(Self(store.insert_table(table)))
     }
 
-    /// Returns the [`TableType`] of `self` in the given `store`.
+    /// Returns the [`TableType`] of this [`Table`] in the given `store`.
     ///
     /// # Panics
     ///
-    /// If `self` does not originate from `store`.
+    /// If this [`Table`] does not originate from `store`.
     pub fn ty(self, store: &Store) -> TableType {
         match self.0.as_ref(store) {
             TableEntity::FuncRef(table) => table.ty(),
@@ -65,7 +65,7 @@ impl Table {
         }
     }
 
-    /// Returns the current value of `self`s `idx`-th element in the given `store.`
+    /// Returns the current value of this [`Table`]s `idx`-th element in the given `store.`
     ///
     /// # Errors
     ///
@@ -73,7 +73,7 @@ impl Table {
     ///
     /// # Panics
     ///
-    /// If `self` does not originate from [`Store`].
+    /// If this [`Table`] does not originate from [`Store`].
     pub fn get(self, store: &Store, idx: u32) -> Option<Ref> {
         match self.0.as_ref(store) {
             TableEntity::FuncRef(table) => table.get(idx).map(Into::into),
@@ -81,16 +81,16 @@ impl Table {
         }
     }
 
-    /// Sets the value of `self`'s `idx`-th element to `new_val` in the given `store`.
+    /// Sets the value of this [`Table`]'s `idx`-th element to `new_val` in the given `store`.
     ///
     /// # Errors
     ///
     /// * If `idx` is out of bounds.
-    /// * If the [`RefType`] of `new_val` does not match that of `self`s elements.
+    /// * If the [`RefType`] of `new_val` does not match that of this [`Table`]s elements.
     ///
     /// # Panics
     ///
-    /// * If `self` does not originate from `store`.
+    /// * If this [`Table`] does not originate from `store`.
     /// * If `new_val` does not originate from `store`.
     pub fn set(self, store: &mut Store, idx: u32, new_val: Ref) -> Result<(), TableError> {
         match (self.0.as_mut(store), new_val) {
@@ -100,7 +100,7 @@ impl Table {
         }
     }
 
-    /// Returns `self`'s current size.
+    /// Returns this [`Table`]'s current size.
     pub fn size(&self, store: &Store) -> u32 {
         match self.0.as_ref(store) {
             TableEntity::FuncRef(table) => table.size(),
@@ -108,20 +108,20 @@ impl Table {
         }
     }
 
-    /// Grows `self` by `num` elements with initial value `init_val`.
+    /// Grows this [`Table`] by `num` elements with initial value `init_val`.
     ///
-    /// Returns the previous size of this `self`.
+    /// Returns the previous size of this [`Table`].
     ///
     /// # Errors
     ///
-    /// - If the [`RefType`] of `init_val` does not match that of `self`'s elements.
-    /// - If `self` failed to grow.
+    /// - If the [`RefType`] of `init_val` does not match that of this [`Table`]'s elements.
+    /// - If this [`Table`] failed to grow.
     ///
     /// # Panics
     ///
     /// - If `init_val` does not originate from `store`.
-    pub fn grow(self, store: &mut Store, val: Ref, num: u32) -> Result<(), TableError> {
-        match (self.0.as_mut(store), val) {
+    pub fn grow(self, store: &mut Store, init_val: Ref, num: u32) -> Result<(), TableError> {
+        match (self.0.as_mut(store), init_val) {
             (TableEntity::FuncRef(table), Ref::FuncRef(val)) => table.grow(val, num),
             (TableEntity::ExternRef(table), Ref::ExternRef(val)) => table.grow(val, num),
             _ => Err(TableError::TypeMismatch),
@@ -163,48 +163,44 @@ impl Guarded for Table {
     }
 }
 
-/// An unguarded version of [`Table`].
 pub(crate) type UnguardedTable = UnguardedHandle<TableEntity>;
 
 /// The type of a [`Table`].
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 pub struct TableType {
-    pub elem: RefType,
-    pub min: u32,
-    pub max: Option<u32>,
+    pub element: RefType,
+    pub minimum: u32,
+    pub maximum: Option<u32>,
 }
 
 impl TableType {
     /// Creates a new [`TableType`] with the following parameters:
     ///
-    /// * `elem` - The [`RefType`] of the [`Table`]'s elements.
-    /// * `min` - The [`Table`]'s minimum size.
-    /// * `max` - The [`Table`]'s maximum size, if any.
-    pub fn new(elem: RefType, min: u32, max: Option<u32>) -> Self {
-        Self { elem, min, max }
+    /// * `element` - The [`RefType`] of the [`Table`]'s elements.
+    /// * `minimum` - The [`Table`]'s minimum size.
+    /// * `maximum` - The [`Table`]'s maximum size, if any.
+    pub fn new(element: RefType, minimum: u32, maximum: Option<u32>) -> Self {
+        Self { element, minimum, maximum }
     }
 
     /// Returns the [`RefType`] of the [`Table`]'s elements.
     pub fn element(&self) -> RefType {
-        self.elem
+        self.element
     }
 
     /// Returns the [`Table`]'s minimum size.
     pub fn minimum(&self) -> u32 {
-        self.min
+        self.minimum
     }
 
     /// Returns the [`Table`]'s maximum size, if any.
     pub fn maximum(&self) -> Option<u32> {
-        self.max
+        self.maximum
     }
 
     pub(crate) fn is_valid(self) -> bool {
-        if self.min > u32::MAX {
-            return false;
-        }
-        if let Some(max) = self.max {
-            if self.min > max {
+        if let Some(maximum) = self.maximum {
+            if self.minimum > maximum {
                 return false;
             }
         }
@@ -212,16 +208,16 @@ impl TableType {
     }
 
     pub(crate) fn is_subtype_of(self, other: Self) -> bool {
-        if self.elem != other.elem {
+        if self.element != other.element {
             return false;
         }
-        if self.min < other.min {
+        if self.minimum < other.minimum {
             return false;
         }
-        match (self.max, other.max) {
+        match (self.maximum, other.maximum) {
             (None, Some(_)) => return false,
-            (Some(max), Some(other_max)) if max > other_max => return false,
-            _ => {}
+            (Some(maximum), Some(other_maximum)) if maximum > other_maximum => return false,
+            _ => ()
         }
         true
     }
@@ -229,16 +225,16 @@ impl TableType {
 
 impl Decode for TableType {
     fn decode(decoder: &mut Decoder<'_>) -> Result<Self, DecodeError> {
-        let elem = decoder.decode()?;
-        let has_max = match decoder.read_byte()? {
+        let element = decoder.decode()?;
+        let has_maximum = match decoder.read_byte()? {
             0x00 => false,
             0x01 => true,
             _ => return Err(DecodeError::new("invalid table type")),
         };
         Ok(Self {
-            elem,
-            min: decoder.decode()?,
-            max: if has_max {
+            element,
+            minimum: decoder.decode()?,
+            maximum: if has_maximum {
                 Some(decoder.decode()?)
             } else {
                 None
@@ -301,8 +297,8 @@ pub(crate) struct TypedTableEntity<T>
 where
     T: Guarded,
 {
-    elems: Vec<T::Unguarded>,
-    max: Option<u32>,
+    elements: Vec<T::Unguarded>,
+    maximum: Option<u32>,
     guard: T::Guard,
 }
 
@@ -310,20 +306,20 @@ impl<T> TypedTableEntity<T>
 where
     T: Guarded,
 {
-    fn new(val: T, min: u32, max: Option<u32>, guard: T::Guard) -> Self {
+    fn new(val: T, minimum: u32, maximum: Option<u32>, guard: T::Guard) -> Self {
         let val = val.to_unguarded(guard);
-        unsafe { Self::new_unguarded(val, min, max, guard) }
+        unsafe { Self::new_unguarded(val, minimum, maximum, guard) }
     }
 
     unsafe fn new_unguarded(
         val: T::Unguarded,
-        min: u32,
-        max: Option<u32>,
+        minimum: u32,
+        maximum: Option<u32>,
         guard: T::Guard,
     ) -> Self {
         Self {
-            elems: vec![val; min as usize],
-            max,
+            elements: vec![val; minimum as usize],
+            maximum,
             guard,
         }
     }
@@ -335,7 +331,7 @@ where
 
     pub(crate) fn get_unguarded(&self, idx: u32) -> Option<T::Unguarded> {
         let idx = idx as usize;
-        let elem = self.elems.get(idx)?;
+        let elem = self.elements.get(idx)?;
         Some(*elem)
     }
 
@@ -350,7 +346,7 @@ where
         val: T::Unguarded,
     ) -> Result<(), TableError> {
         let elem = self
-            .elems
+            .elements
             .get_mut(idx as usize)
             .ok_or(TableError::IdxOutOfBounds)?;
         *elem = val;
@@ -358,7 +354,7 @@ where
     }
 
     pub(crate) fn size(&self) -> u32 {
-        self.elems.len() as u32
+        self.elements.len() as u32
     }
 
     fn grow(&mut self, val: T, num: u32) -> Result<u32, TableError> {
@@ -371,12 +367,12 @@ where
         val: T::Unguarded,
         num: u32,
     ) -> Result<u32, TableError> {
-        if num > self.max.unwrap_or(u32::MAX) - self.size() {
+        if num > self.maximum.unwrap_or(u32::MAX) - self.size() {
             return Err(TableError::FailedToGrow)?;
         }
         let num = num as usize;
         let size = self.size();
-        self.elems.resize(self.elems.len() + num, val);
+        self.elements.resize(self.elements.len() + num, val);
         Ok(size)
     }
 
@@ -387,7 +383,7 @@ where
         num: u32,
     ) -> Result<(), Trap> {
         let elems = self
-            .elems
+            .elements
             .get_mut(idx as usize..)
             .and_then(|elems| elems.get_mut(..num as usize))
             .ok_or(Trap::TableAccessOutOfBounds)?;
@@ -403,12 +399,12 @@ where
         num: u32,
     ) -> Result<(), Trap> {
         let dst_elems = self
-            .elems
+            .elements
             .get_mut(dst_idx as usize..)
             .and_then(|elems| elems.get_mut(..num as usize))
             .ok_or(Trap::TableAccessOutOfBounds)?;
         let src_elems = src_table
-            .elems
+            .elements
             .get(src_idx as usize..)
             .and_then(|elems| elems.get(..num as usize))
             .ok_or(Trap::TableAccessOutOfBounds)?;
@@ -420,7 +416,7 @@ where
         if num > self.size() || dst_idx > self.size() - num || src_idx > self.size() - num {
             return Err(Trap::TableAccessOutOfBounds)?;
         }
-        self.elems.copy_within(
+        self.elements.copy_within(
             src_idx as usize..src_idx as usize + num as usize,
             dst_idx as usize,
         );
@@ -435,7 +431,7 @@ where
         num: u32,
     ) -> Result<(), Trap> {
         let dst_elems = self
-            .elems
+            .elements
             .get_mut(dst_idx as usize..)
             .and_then(|elems| elems.get_mut(..num as usize))
             .ok_or(Trap::TableAccessOutOfBounds)?;
@@ -454,7 +450,7 @@ where
     T: Guarded + RefTypeOf,
 {
     fn ty(&self) -> TableType {
-        TableType::new(T::ref_type_of(), self.size(), self.max)
+        TableType::new(T::ref_type_of(), self.size(), self.maximum)
     }
 }
 

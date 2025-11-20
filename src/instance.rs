@@ -7,10 +7,10 @@ use {
         func::{Func, UnguardedFunc},
         runtime::{
             global::{Global, UnguardedGlobal},
+            memory::{Memory, UnguardedMem},
             table::{Table, UnguardedTable},
         },
         guarded::Guarded,
-        mem::{Mem, UnguardedMem},
         store::{InternedFuncType, StoreGuard, UnguardedInternedFuncType},
     },
     std::{
@@ -47,7 +47,7 @@ impl Instance {
     }
 
     /// Returns the exported [`Mem`] with the given name in this [`Instance`], if it exists.
-    pub fn exported_mem(&self, name: &str) -> Option<Mem> {
+    pub fn exported_mem(&self, name: &str) -> Option<Memory> {
         self.exported_val(name).and_then(|val| val.to_mem())
     }
 
@@ -120,9 +120,9 @@ impl Instance {
     }
 
     /// Returns the [`Mem`] at the given index in this [`Instance`], if it exists.
-    pub(crate) fn mem(&self, idx: u32) -> Option<Mem> {
+    pub(crate) fn mem(&self, idx: u32) -> Option<Memory> {
         self.unguarded_mem(idx)
-            .map(|mem| unsafe { Mem::from_unguarded(mem, self.store_id) })
+            .map(|mem| unsafe { Memory::from_unguarded(mem, self.store_id) })
     }
 
     /// An unguarded version of [`Instance::mem`].
@@ -262,9 +262,9 @@ impl InstanceIniter {
     }
 
     /// Returns the [`Mem`] at the given index in this [`InstanceIniter`], if it exists.
-    pub(crate) fn mem(&self, idx: u32) -> Option<Mem> {
+    pub(crate) fn mem(&self, idx: u32) -> Option<Memory> {
         self.unguarded_mem(idx)
-            .map(|mem| unsafe { Mem::from_unguarded(mem, self.store_id) })
+            .map(|mem| unsafe { Memory::from_unguarded(mem, self.store_id) })
     }
 
     /// An unguarded version of [`InstanceIniter::mem`].
@@ -298,7 +298,7 @@ impl InstanceIniter {
     }
 
     /// Appends the given [`Mem`] to this [`InstanceIniter`].
-    pub(crate) fn push_mem(&mut self, mem: Mem) {
+    pub(crate) fn push_mem(&mut self, mem: Memory) {
         self.mems.push(mem.to_unguarded(self.store_id));
     }
 

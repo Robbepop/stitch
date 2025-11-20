@@ -1,7 +1,7 @@
 use {
     makepad_stitch::{
-        Engine, Error, Extern, ExternRef, Func, FuncRef, Global, GlobalType, Instance, Limits,
-        Linker, Mem, MemType, Module, Mutability, Ref, RefType, Store, Table, TableType, Val,
+        Engine, Error, Extern, ExternRef, Func, FuncRef, Global, GlobalType, Instance,
+        Linker, Memory, MemoryType, Module, Mutability, Ref, RefType, Store, Table, TableType, Val,
         ValType,
     },
     std::{collections::HashMap, sync::Arc},
@@ -56,14 +56,9 @@ impl WastRunner {
             Ref::null(RefType::FuncRef),
         )
         .unwrap();
-        let memory = Mem::new(
+        let memory = Memory::new(
             &mut store,
-            MemType {
-                limits: Limits {
-                    min: 1,
-                    max: Some(2),
-                },
-            },
+            MemoryType::new(1, Some(2)),
         );
         let global_i32 = Global::new(
             &mut store,

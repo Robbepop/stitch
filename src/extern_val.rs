@@ -3,10 +3,10 @@ use crate::{
     func::{Func, FuncType, UnguardedFunc},
     runtime::{
         global::{Global, GlobalType, UnguardedGlobal},
+        memory::{Memory, MemoryType, UnguardedMem},
         table::{Table, TableType, UnguardedTable},
     },
     guarded::Guarded,
-    mem::{Mem, MemType, UnguardedMem},
     store::{Store, StoreGuard},
 };
 
@@ -15,7 +15,7 @@ use crate::{
 pub enum ExternVal {
     Func(Func),
     Table(Table),
-    Memory(Mem),
+    Memory(Memory),
     Global(Global),
 }
 
@@ -67,7 +67,7 @@ impl ExternVal {
     }
 
     /// Converts this [`ExternVal`] to a [`Mem`], if it is one.
-    pub fn to_mem(self) -> Option<Mem> {
+    pub fn to_mem(self) -> Option<Memory> {
         match self {
             Self::Memory(mem) => Some(mem),
             _ => None,
@@ -91,7 +91,7 @@ impl Guarded for ExternVal {
         match unguarded {
             UnguardedExternVal::Func(unguarded) => Func::from_unguarded(unguarded, guard).into(),
             UnguardedExternVal::Table(unguarded) => Table::from_unguarded(unguarded, guard).into(),
-            UnguardedExternVal::Mem(unguarded) => Mem::from_unguarded(unguarded, guard).into(),
+            UnguardedExternVal::Mem(unguarded) => Memory::from_unguarded(unguarded, guard).into(),
             UnguardedExternVal::Global(unguarded) => Global::from_unguarded(unguarded, guard).into(),
         }
     }
@@ -118,8 +118,8 @@ impl From<Table> for ExternVal {
     }
 }
 
-impl From<Mem> for ExternVal {
-    fn from(memory: Mem) -> Self {
+impl From<Memory> for ExternVal {
+    fn from(memory: Memory) -> Self {
         Self::Memory(memory)
     }
 }
@@ -191,7 +191,7 @@ impl Decode for ExternValDesc {
 pub enum ExternType {
     Func(FuncType),
     Table(TableType),
-    Mem(MemType),
+    Mem(MemoryType),
     Global(GlobalType),
 }
 
@@ -233,7 +233,7 @@ impl ExternType {
     }
 
     /// Converts this [`ExternType`] to a [`MemType`], if it is one.
-    pub fn to_mem(self) -> Option<MemType> {
+    pub fn to_mem(self) -> Option<MemoryType> {
         match self {
             Self::Mem(mem_type) => Some(mem_type),
             _ => None,
@@ -261,8 +261,8 @@ impl From<TableType> for ExternType {
     }
 }
 
-impl From<MemType> for ExternType {
-    fn from(type_: MemType) -> Self {
+impl From<MemoryType> for ExternType {
+    fn from(type_: MemoryType) -> Self {
         Self::Mem(type_)
     }
 }
@@ -281,7 +281,7 @@ impl From<GlobalType> for ExternType {
 pub(crate) enum ExternTypeDesc {
     Func(u32),
     Table(TableType),
-    Memory(MemType),
+    Memory(MemoryType),
     Global(GlobalType),
 }
 

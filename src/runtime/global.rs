@@ -10,7 +10,7 @@ use {
     std::{error::Error, fmt},
 };
 
-/// A WebAssembly global variable.
+/// A WebAssembly global.
 #[derive(Copy, Clone, Eq, PartialEq, Debug)]
 #[repr(transparent)]
 pub struct Global(pub(crate) Handle<GlobalEntity>);
@@ -128,7 +128,6 @@ impl Guarded for Global {
     }
 }
 
-/// An unguarded handle to a [`Global`].
 pub(crate) type UnguardedGlobal = UnguardedHandle<GlobalEntity>;
 
 /// The type of a [`Global`].
