@@ -5,7 +5,8 @@ use {
     crate::runtime::memory::UnguardedMem,
 };
 
-pub(crate) unsafe extern "C" fn load<T, R, W>(
+/// Executes a load operation.
+pub(crate) unsafe extern "C" fn execute_load<T, R, W>(
     ip: Ip,
     sp: Sp,
     md: Md,
@@ -30,6 +31,7 @@ where
     }
 }
 
+/// Executes an extending load operation.
 pub(crate) unsafe extern "C" fn load_n<Dst, Src, R, W>(
     ip: Ip,
     sp: Sp,
@@ -57,6 +59,7 @@ where
     }
 }
 
+/// Executes a store operation.
 pub(crate) unsafe extern "C" fn store<T, R0, R1>(
     ip: Ip,
     sp: Sp,
@@ -82,6 +85,7 @@ where
     }
 }
 
+/// Executes an extending store operation.
 pub(crate) unsafe extern "C" fn store_n<Src, Dst, R0, R1>(
     ip: Ip,
     sp: Sp,
@@ -109,6 +113,7 @@ where
     }
 }
 
+/// Executes a `memory.size` instruction.
 pub(crate) unsafe extern "C" fn memory_size<W>(
     ip: Ip,
     sp: Sp,
@@ -139,6 +144,7 @@ where
     }
 }
 
+/// Executes a `memory.grow` instruction.
 pub(crate) unsafe extern "C" fn memory_grow<R, W>(
     ip: Ip,
     sp: Sp,
@@ -180,6 +186,7 @@ where
     }
 }
 
+/// Executes a `memory.fill` instruction.
 pub(crate) unsafe extern "C" fn memory_fill<R0, R1, R2>(
     ip: Ip,
     sp: Sp,
@@ -206,6 +213,7 @@ where
     }
 }
 
+/// Executes a `memory.copy` instruction.
 pub(crate) unsafe extern "C" fn memory_copy<R0, R1, R2>(
     ip: Ip,
     sp: Sp,
@@ -232,6 +240,7 @@ where
     }
 }
 
+/// Executes a `memory.init` instruction.
 pub(crate) unsafe extern "C" fn memory_init<R0, R1, R2>(
     ip: Ip,
     sp: Sp,
@@ -259,6 +268,7 @@ where
     }
 }
 
+/// Executes a `data.drop` instruction.
 pub(crate) unsafe extern "C" fn data_drop(
     ip: Ip,
     sp: Sp,

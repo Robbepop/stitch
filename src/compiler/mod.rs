@@ -2780,9 +2780,9 @@ where
     T: ReadFromPtr + WriteToReg
 {
     match input {
-        OpdKind::Imm => executor::load::<T, ReadImm, WriteReg>,
-        OpdKind::Stk => executor::load::<T, ReadStack, WriteReg>,
-        OpdKind::Reg => executor::load::<T, ReadReg, WriteReg>,
+        OpdKind::Imm => executor::execute_load::<T, ReadImm, WriteReg>,
+        OpdKind::Stk => executor::execute_load::<T, ReadStack, WriteReg>,
+        OpdKind::Reg => executor::execute_load::<T, ReadReg, WriteReg>,
     }
 }
 
