@@ -18,7 +18,6 @@ mod func;
 mod guarded;
 mod instance;
 mod into_func;
-mod limits;
 mod linker;
 mod module;
 mod ops;
@@ -43,7 +42,6 @@ pub use self::{
         table::{Table, TableError, TableType},
     },
     instance::{Instance, InstanceExports},
-    limits::Limits,
     linker::{InstantiateError, Linker},
     module::{Module, ModuleExports, ModuleImports},
     ref_::{ExternRef, FuncRef, Ref, RefType},
