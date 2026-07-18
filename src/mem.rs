@@ -207,6 +207,10 @@ impl MemEntity {
         self.bytes
             .resize((new_size as usize).checked_mul(PAGE_SIZE).unwrap(), 0);
         let new_data = self.bytes.as_mut_ptr();
+        // The `ms` register is a byte length everywhere else (see the `enter` prologue, the
+        // `memory.grow` handler, and the load/store bounds checks in `exec.rs`), so the saved
+        // slot must be patched with the new byte length, not the page count `new_size`.
+        let new_len = self.bytes.len() as u32;
 
         // Each call frame on the stack stores the value of the `md` and `ms` register. Growing
         // this [`Memory`] invalidates all call frames for which `md` and `ms` store a pointer to
@@ -218,7 +222,7 @@ impl MemEntity {
             while ptr != stack.base_ptr() {
                 if *ptr.offset(-2).cast::<*mut u8>() == old_data {
                     *ptr.offset(-2).cast() = new_data;
-                    *ptr.offset(-1).cast() = new_size;
+                    *ptr.offset(-1).cast() = new_len;
                 }
                 ptr = *ptr.offset(-3).cast();
             }

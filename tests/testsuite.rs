@@ -201,6 +201,32 @@ fn memory_grow_stack_fixup() {
     );
 }
 
+/// Regression test: the `md`/`ms` fix-up in `MemEntity::grow_with_stack` must write the new
+/// *byte length* into the restored `ms` slot, not the page count. The `ms` register is a byte
+/// length everywhere else (the `enter` prologue, the `memory.grow` handler, and the load/store
+/// bounds checks). Writing the page count corrupts every caller frame's saved `ms` down to a
+/// tiny value, so any subsequent access at an offset larger than the page count spuriously traps
+/// `MemAccessOutOfBounds`. This is exactly what real workloads (allocators growing memory in a
+/// callee, then using large offsets from the caller) hit. The access below is at offset 60000,
+/// which exceeds the post-grow page count (2) but is well within the byte length (131072) — the
+/// condition `memory_grow_stack_fixup` (offsets 0/4) fails to cover.
+#[test]
+fn memory_grow_stack_ms_is_bytes() {
+    let mut runner = WastRunner::new();
+    runner.run(
+        r#"
+        (module
+          (memory 1)                                         ;; 65536 bytes, 1 page
+          (func $grow (drop (memory.grow (i32.const 1))))    ;; callee grows -> 2 pages
+          (func (export "run") (result i32)
+            (i32.store (i32.const 60000) (i32.const 42))     ;; caller writes at a high offset
+            (call $grow)                                     ;; corrupts caller `ms` if buggy
+            (i32.load (i32.const 60000))))                   ;; must NOT trap; must read 42
+        (assert_return (invoke "run") (i32.const 42))
+        "#,
+    );
+}
+
 /// Regression test for issue #4: a live *register* operand that survives a control-flow
 /// construct must be preserved to its stack slot unconditionally on entry, not lazily inside
 /// the (conditionally executed) body. The upstream `preserve-regs.wast` uses `global.get`,
