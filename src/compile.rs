@@ -441,6 +441,28 @@ impl<'a> Compile<'a> {
         }
     }
 
+    /// Stabilizes every operand below the top `count` operands, so that its value is stored in a
+    /// known stack slot before entering (or branching into) control flow.
+    ///
+    /// Register and local operands are otherwise preserved *lazily*, when an instruction inside
+    /// the (conditionally executed) construct happens to need the register or overwrite the local.
+    /// On a runtime path that skips the construct's body, that preservation never runs, leaving
+    /// the operand's stack slot uninitialized even though the compiler has already reclassified
+    /// the operand as stack-resident. Preserving these operands here, unconditionally, keeps the
+    /// compile-time model and the runtime state in agreement on every path.
+    ///
+    /// Immediate operands are left alone: they re-emit their literal on use and never need a
+    /// stack slot, and nothing inside a construct reaches below its height to preserve them.
+    ///
+    /// The top `count` operands are handled separately by the caller (a block's inputs, and the
+    /// branch condition for `if`), so they are skipped here.
+    fn preserve_opds_below(&mut self, count: usize) {
+        for opd_depth in count..self.opds.len() {
+            self.ensure_opd_not_local(opd_depth);
+            self.ensure_opd_not_reg(opd_depth);
+        }
+    }
+
     /// Copies the values for the label with the given index to their expected locations
     /// on the stack, and pop them from the stack.
     fn resolve_label_vals(&mut self, label_idx: usize) {
@@ -578,6 +600,10 @@ impl<'a> InstrVisitor for Compile<'a> {
                 self.ensure_opd_not_reg(opd_depth);
             }
 
+            // Preserve every register/local operand that lives below the block inputs, so that
+            // its value survives the block on every runtime path.
+            self.preserve_opds_below(type_.params().len());
+
             // Pop the inputs of the block from the stack.
             for _ in 0..type_.params().len() {
                 self.pop_opd();
@@ -612,6 +638,10 @@ impl<'a> InstrVisitor for Compile<'a> {
                 self.ensure_opd_not_local(opd_depth);
                 self.ensure_opd_not_reg(opd_depth);
             }
+
+            // Preserve every register/local operand that lives below the block inputs, so that
+            // its value survives the loop on every runtime path (including each back-edge).
+            self.preserve_opds_below(type_.params().len());
 
             // Pop the inputs of the block from the stack.
             for _ in 0..type_.params().len() {
@@ -649,6 +679,12 @@ impl<'a> InstrVisitor for Compile<'a> {
                 self.ensure_opd_not_local(opd_depth);
                 self.ensure_opd_not_reg(opd_depth);
             }
+
+            // Preserve every register/local operand that lives below the condition and the block
+            // inputs, so that its value survives the `if` on every runtime path. The `+ 1` skips
+            // the condition operand at depth 0, which is consumed by the branch below and never
+            // survives the construct, so it can stay in its register.
+            self.preserve_opds_below(type_.params().len() + 1);
 
             // Emit the instruction.
             self.emit(select_br_if_z(self.opd(0).kind()));

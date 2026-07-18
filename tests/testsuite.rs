@@ -70,6 +70,8 @@ testsuite! {
     local_set => "local_set.wast",
     local_tee => "local_tee.wast",
     r#loop => "loop.wast",
+    preserve_regs => "preserve-regs.wast",
+    preserve_locals => "preserve-locals.wast",
     memory => "memory.wast",
     memory_copy => "memory_copy.wast",
     memory_fill => "memory_fill.wast",
@@ -195,6 +197,60 @@ fn memory_grow_stack_fixup() {
             (i32.load (i32.const 4))))
         (assert_return (invoke "run") (i32.const 42))
         (assert_return (invoke "run_nested") (i32.const 7))
+        "#,
+    );
+}
+
+/// Regression test for issue #4: a live *register* operand that survives a control-flow
+/// construct must be preserved to its stack slot unconditionally on entry, not lazily inside
+/// the (conditionally executed) body. The upstream `preserve-regs.wast` uses `global.get`,
+/// which stitch writes straight to a stack slot (never a register), so it cannot reproduce the
+/// bug; these cases use *computed* values (`f32.convert`, arithmetic), which do allocate a
+/// register. The float result lives in the float register while the i32 branch condition uses
+/// the integer register, so the float survivor stays register-resident across the construct.
+#[test]
+fn preserve_regs_computed() {
+    let mut runner = WastRunner::new();
+    runner.run(
+        r#"
+        (module
+          ;; The exact example from the issue.
+          (func (export "if.f32") (param i32) (result f32)
+            (f32.convert_i32_s (local.get 0))          ;; survivor A in the float register
+            (if (i32.eqz (local.get 0))
+                (then (drop (f32.convert_i32_u (local.get 0))))))  ;; needs float reg -> spills A
+          (func (export "if.f64") (param i32) (result f64)
+            (f64.convert_i32_s (local.get 0))
+            (if (i32.eqz (local.get 0))
+                (then (drop (f64.convert_i32_u (local.get 0))))))
+          ;; `block` + `br_if`: the survivor lives below the branch.
+          (func (export "block.f32") (param i32) (result f32)
+            (f32.convert_i32_s (local.get 0))
+            (block
+                (br_if 0 (local.get 0))
+                (drop (f32.convert_i32_u (local.get 0)))))
+          ;; `loop`: the survivor lives below the loop across a back-edge.
+          (func (export "loop.f32") (param i32) (result f32)
+            (local $done i32)
+            (f32.convert_i32_s (local.get 0))          ;; survivor A in the float register
+            (loop $continue
+                (if (i32.eqz (local.get $done))
+                    (then
+                        (drop (f32.convert_i32_u (local.get 0)))  ;; overwrites float reg
+                        (local.set $done (i32.const 1))
+                        (br $continue))))))
+        (assert_return (invoke "if.f32" (i32.const 0)) (f32.const 0))
+        (assert_return (invoke "if.f32" (i32.const 1)) (f32.const 1))
+        (assert_return (invoke "if.f32" (i32.const 7)) (f32.const 7))
+        (assert_return (invoke "if.f64" (i32.const 0)) (f64.const 0))
+        (assert_return (invoke "if.f64" (i32.const 1)) (f64.const 1))
+        (assert_return (invoke "if.f64" (i32.const 7)) (f64.const 7))
+        (assert_return (invoke "block.f32" (i32.const 0)) (f32.const 0))
+        (assert_return (invoke "block.f32" (i32.const 1)) (f32.const 1))
+        (assert_return (invoke "block.f32" (i32.const 7)) (f32.const 7))
+        (assert_return (invoke "loop.f32" (i32.const 0)) (f32.const 0))
+        (assert_return (invoke "loop.f32" (i32.const 1)) (f32.const 1))
+        (assert_return (invoke "loop.f32" (i32.const 7)) (f32.const 7))
         "#,
     );
 }
