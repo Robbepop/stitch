@@ -150,7 +150,7 @@ impl StoreId {
 
         Self(
             NEXT_ID
-                .fetch_update(Ordering::SeqCst, Ordering::SeqCst, |id| id.checked_add(1))
+                .try_update(Ordering::SeqCst, Ordering::SeqCst, |id| id.checked_add(1))
                 .unwrap(),
         )
     }
