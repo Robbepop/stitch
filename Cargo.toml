@@ -7,8 +7,14 @@ license = "MIT"
 readme = "README.md"
 repository = "https://github.com/makepad/stitch"
 
+# This interpreter is tail-call threaded: every instruction handler ends by tail-calling
+# the next one. It relies on LLVM turning those into jumps, otherwise a long-running guest
+# grows the native stack until it overflows. `debug-assertions = false` is required for
+# that optimization to happen (with it on, the tail calls are not eliminated); `opt-level`
+# must be >= 1 as well. Without both, `cargo test`/`cargo run` overflow the stack.
 [profile.dev]
-opt-level = 1  
+opt-level = 1
+debug-assertions = false
 
 [dev-dependencies]
 criterion = "0.5.1"
