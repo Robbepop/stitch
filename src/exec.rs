@@ -215,45 +215,43 @@ pub(crate) fn exec(
             };
 
             // Main interpreter loop
-            loop {
-                match ControlFlow::from_bits(unsafe {
-                    next_instr(
-                        context.ip,
-                        context.sp,
-                        context.md,
-                        context.ms,
-                        context.ix,
-                        context.sx,
-                        context.dx,
-                        &mut context as *mut _,
-                    )
-                })
-                .unwrap()
-                {
-                    ControlFlow::Stop => {
-                        stack = context.stack.take().unwrap();
+            match ControlFlow::from_bits(unsafe {
+                next_instr(
+                    context.ip,
+                    context.sp,
+                    context.md,
+                    context.ms,
+                    context.ix,
+                    context.sx,
+                    context.dx,
+                    &mut context as *mut _,
+                )
+            })
+            .unwrap()
+            {
+                ControlFlow::Stop => 'exit: {
+                    stack = context.stack.take().unwrap();
 
-                        // Reset the stack to the start of the call frame.
-                        unsafe { stack.set_ptr(ptr) };
+                    // Reset the stack to the start of the call frame.
+                    unsafe { stack.set_ptr(ptr) };
 
-                        break;
-                    }
-                    ControlFlow::Trap(trap) => {
-                        stack = context.stack.take().unwrap();
+                    break 'exit;
+                }
+                ControlFlow::Trap(trap) => {
+                    stack = context.stack.take().unwrap();
 
-                        // Reset the stack to the start of the call frame.
-                        unsafe { stack.set_ptr(ptr) };
+                    // Reset the stack to the start of the call frame.
+                    unsafe { stack.set_ptr(ptr) };
 
-                        Err(trap)?;
-                    }
-                    ControlFlow::Error => {
-                        stack = context.stack.take().unwrap();
+                    Err(trap)?;
+                }
+                ControlFlow::Error => {
+                    stack = context.stack.take().unwrap();
 
-                        // Reset the stack to the start of the call frame.
-                        unsafe { stack.set_ptr(ptr) };
+                    // Reset the stack to the start of the call frame.
+                    unsafe { stack.set_ptr(ptr) };
 
-                        return Err(context.error.take().unwrap());
-                    }
+                    return Err(context.error.take().unwrap());
                 }
             }
         }
