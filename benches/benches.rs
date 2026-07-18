@@ -1,7 +1,7 @@
 use {
-    criterion::{black_box, criterion_group, criterion_main, Criterion},
+    criterion::{Criterion, black_box, criterion_group, criterion_main},
     makepad_stitch::{Engine, Linker, Module, Store, Val},
-    wast::{parser, parser::ParseBuffer, Wat},
+    wast::{Wat, parser, parser::ParseBuffer},
 };
 
 fn new_store_and_instance(input: &str) -> (makepad_stitch::Store, makepad_stitch::Instance) {

@@ -5,10 +5,10 @@ use {
     },
     std::{collections::HashMap, sync::Arc},
     wast::{
+        QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat,
         core::{HeapType, NanPattern, WastArgCore, WastRetCore},
         parser,
         parser::ParseBuffer,
-        QuoteWat, Wast, WastArg, WastDirective, WastExecute, WastInvoke, WastRet, Wat,
     },
 };
 

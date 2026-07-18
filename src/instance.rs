@@ -12,7 +12,7 @@ use {
     },
     std::{
         cell::OnceCell,
-        collections::{hash_map, HashMap},
+        collections::{HashMap, hash_map},
         sync::Arc,
     },
 };

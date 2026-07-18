@@ -87,7 +87,9 @@ impl ExternVal {
     /// with the given [`StoreId`].
     pub(crate) unsafe fn from_unguarded(val: UnguardedExternVal, store_id: StoreId) -> Self {
         match val {
-            UnguardedExternVal::Func(func) => unsafe { Func::from_unguarded(func, store_id) }.into(),
+            UnguardedExternVal::Func(func) => {
+                unsafe { Func::from_unguarded(func, store_id) }.into()
+            }
             UnguardedExternVal::Table(table) => {
                 unsafe { Table::from_unguarded(table, store_id) }.into()
             }
