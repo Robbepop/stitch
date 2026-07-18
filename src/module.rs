@@ -76,9 +76,9 @@ impl Module {
             if section_id != 0
                 && !expected_section_ids
                     .any(|expected_section_id| expected_section_id == section_id)
-                {
-                    Err(DecodeError::new("section id mismatch"))?;
-                }
+            {
+                Err(DecodeError::new("section id mismatch"))?;
+            }
             let mut section_decoder = decoder.decode_decoder()?;
             match section_id {
                 // Custom section
@@ -816,11 +816,12 @@ impl ModuleBuilder {
             engine.validate(type_, &self, code)?;
         }
         if let Some(data_count) = self.data_count
-            && data_count != u32::try_from(self.datas.len()).unwrap() {
-                Err(DecodeError::new(
-                    "data count and data section have inconsistent sizes",
-                ))?;
-            }
+            && data_count != u32::try_from(self.datas.len()).unwrap()
+        {
+            Err(DecodeError::new(
+                "data count and data section have inconsistent sizes",
+            ))?;
+        }
         Ok(Module {
             types: self.types.into(),
             imports: self.imports.into(),

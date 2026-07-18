@@ -130,27 +130,27 @@ impl Global {
             (GlobalEntity::I32(global), UnguardedVal::I32(val)) => {
                 let _: () = global.set(val);
                 Ok(())
-            },
+            }
             (GlobalEntity::I64(global), UnguardedVal::I64(val)) => {
                 let _: () = global.set(val);
                 Ok(())
-            },
+            }
             (GlobalEntity::F32(global), UnguardedVal::F32(val)) => {
                 let _: () = global.set(val);
                 Ok(())
-            },
+            }
             (GlobalEntity::F64(global), UnguardedVal::F64(val)) => {
                 let _: () = global.set(val);
                 Ok(())
-            },
+            }
             (GlobalEntity::FuncRef(global), UnguardedVal::FuncRef(val)) => {
                 let _: () = global.set(val);
                 Ok(())
-            },
+            }
             (GlobalEntity::ExternRef(global), UnguardedVal::ExternRef(val)) => {
                 let _: () = global.set(val);
                 Ok(())
-            },
+            }
             _ => Err(GlobalError::ValTypeMismatch),
         }
     }

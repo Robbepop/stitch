@@ -57,9 +57,7 @@ impl ConstExpr {
             ConstInstr::F64Const(val) => val.into(),
             ConstInstr::RefNull(ref_ty) => Ref::null(ref_ty).into(),
             ConstInstr::RefFunc(func_idx) => FuncRef::new(context.func(func_idx).unwrap()).into(),
-            ConstInstr::GlobalGet(global_idx) => {
-                context.global(global_idx).unwrap().get(store)
-            }
+            ConstInstr::GlobalGet(global_idx) => context.global(global_idx).unwrap().get(store),
         }
     }
 }

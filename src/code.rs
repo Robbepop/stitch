@@ -24,8 +24,6 @@ pub(crate) struct UncompiledCode {
 
 impl Decode for UncompiledCode {
     fn decode(decoder: &mut Decoder<'_>) -> Result<Self, DecodeError> {
-        
-
         let mut code_decoder = decoder.decode_decoder()?;
         Ok(Self {
             locals: {
@@ -35,7 +33,10 @@ impl Decode for UncompiledCode {
                     if count > usize::try_from(u32::MAX).unwrap() - locals.len() {
                         return Err(DecodeError::new("too many locals"));
                     }
-                    locals.extend(std::iter::repeat_n(code_decoder.decode::<ValType>()?, count));
+                    locals.extend(std::iter::repeat_n(
+                        code_decoder.decode::<ValType>()?,
+                        count,
+                    ));
                 }
                 locals.into()
             },
