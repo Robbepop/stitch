@@ -171,3 +171,30 @@ testsuite! {
     utf8_import_module => "utf8-import-module.wast",
     utf8_invalid_encoding => "utf8-invalid-encoding.wast",
 }
+
+/// Regression test: `memory.grow` must repair the cached `md`/`ms` register of every live
+/// call frame, including the frame executing `memory.grow` itself (whose saved slot holds
+/// the caller's `md` that is restored on return). A large grow forces the backing `Vec` to
+/// reallocate and move, so a stale `md` in the caller would read freed memory (garbage or
+/// SIGSEGV) after the growing callee returns.
+#[test]
+fn memory_grow_stack_fixup() {
+    let mut runner = WastRunner::new();
+    runner.run(
+        r#"
+        (module
+          (memory 1)
+          (func $grow (drop (memory.grow (i32.const 100)))) ;; large -> Vec reallocates & moves
+          (func (export "run") (result i32)
+            (i32.store (i32.const 0) (i32.const 42))         ;; caller establishes/uses md
+            (call $grow)                                     ;; grow moves buffer under caller
+            (i32.load (i32.const 0)))                        ;; restored md must be valid
+          (func (export "run_nested") (result i32)
+            (i32.store (i32.const 4) (i32.const 7))
+            (call $grow)
+            (i32.load (i32.const 4))))
+        (assert_return (invoke "run") (i32.const 42))
+        (assert_return (invoke "run_nested") (i32.const 7))
+        "#,
+    );
+}

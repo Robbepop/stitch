@@ -215,11 +215,11 @@ impl MemEntity {
         // a pointer to the new data and size of this [`Memory`] instead.
         let mut ptr = stack.ptr();
         while ptr != stack.base_ptr() {
-            ptr = *ptr.offset(-3).cast();
             if *ptr.offset(-2).cast::<*mut u8>() == old_data {
                 *ptr.offset(-2).cast() = new_data;
                 *ptr.offset(-1).cast() = new_size;
             }
+            ptr = *ptr.offset(-3).cast();
         }
 
         Ok(old_size)
