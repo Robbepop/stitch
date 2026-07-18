@@ -627,10 +627,7 @@ impl OpdType {
     }
 
     fn is_unknown(self) -> bool {
-        match self {
-            OpdType::Unknown => true,
-            _ => false,
-        }
+        matches!(self, OpdType::Unknown)
     }
 
     fn check(self, expected_type: impl Into<ValType>) -> Result<(), DecodeError> {

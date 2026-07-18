@@ -293,6 +293,7 @@ impl HostFuncEntity {
 
 #[derive(Clone)]
 pub struct HostFuncTrampoline {
+    #[expect(clippy::type_complexity)]
     inner: Arc<dyn Fn(&mut Store, StackGuard) -> Result<StackGuard, Error> + Send + Sync + 'static>,
 }
 

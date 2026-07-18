@@ -12,15 +12,16 @@ pub struct Linker {
     defs: HashMap<(InternedString, InternedString), ExternVal>,
 }
 
-impl Linker {
-    /// Creates a new [`Linker`].
-    pub fn new() -> Self {
+impl Default for Linker {
+    fn default() -> Self {
         Linker {
             strings: StringInterner::new(),
             defs: HashMap::new(),
         }
     }
+}
 
+impl Linker {
     pub fn define(&mut self, module: &str, name: &str, val: impl Into<ExternVal>) {
         let module = self.strings.get_or_intern(module);
         let name = self.strings.get_or_intern(name);

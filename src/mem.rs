@@ -67,7 +67,7 @@ impl Mem {
         src_offset: u32,
         count: u32,
     ) -> Result<(), Trap> {
-        let (dst_table, src_data) = HandlePair(self.0, src_data.0).as_mut_pair(store);
+        let (dst_table, src_data) = HandlePair(self.0, src_data.0).into_mut_pair(store);
         dst_table.init(dst_offset, src_data, src_offset, count)
     }
 

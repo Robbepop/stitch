@@ -31,7 +31,7 @@ use {
 #[derive(Debug)]
 pub struct Module {
     types: Arc<[FuncType]>,
-    imports: Box<[((Arc<str>, Arc<str>), ImportKind)]>,
+    imports: Box<[(ImportName, ImportKind)]>,
     imported_func_count: usize,
     imported_table_count: usize,
     imported_memory_count: usize,
@@ -417,10 +417,12 @@ impl Module {
     }
 }
 
+type ImportName = (Arc<str>, Arc<str>);
+
 /// An iterator over the imports in a [`Module`].
 #[derive(Clone, Debug)]
 pub struct ModuleImports<'a> {
-    imports: slice::Iter<'a, ((Arc<str>, Arc<str>), ImportKind)>,
+    imports: slice::Iter<'a, (ImportName, ImportKind)>,
     imported_func_types: slice::Iter<'a, FuncType>,
     imported_table_types: slice::Iter<'a, TableType>,
     imported_memory_types: slice::Iter<'a, MemType>,
@@ -468,7 +470,7 @@ impl<'a> Iterator for ModuleExports<'a> {
 #[derive(Debug)]
 pub(crate) struct ModuleBuilder {
     types: Vec<FuncType>,
-    imports: Vec<((Arc<str>, Arc<str>), ImportKind)>,
+    imports: Vec<(ImportName, ImportKind)>,
     imported_func_count: usize,
     imported_table_count: usize,
     imported_memory_count: usize,

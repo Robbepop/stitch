@@ -255,7 +255,7 @@ pub(crate) type UnguardedHandle<T> = NonNull<T>;
 pub(crate) struct HandlePair<T, U>(pub(crate) Handle<T>, pub(crate) Handle<U>);
 
 impl<T, U> HandlePair<T, U> {
-    pub(crate) fn as_mut_pair(mut self, store: &Store) -> (&mut T, &mut U) {
+    pub(crate) fn into_mut_pair(mut self, store: &mut Store) -> (&mut T, &mut U) {
         assert_eq!(store.id(), self.0.store_id, "store mismatch");
         assert_eq!(store.id(), self.1.store_id, "store mismatch");
         assert_ne!(

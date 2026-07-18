@@ -40,7 +40,6 @@ use {
 /// On 64-bit Windows platforms, the "C" ABI corresponds to the "win64" ABI. This ABI allows only
 /// the first 4 arguments to be passed in hardware registers, regardless of their type. This is
 /// insufficient for our needs, so on Windows platforms, we use the "sysv64" ABI instead.
-
 #[cfg(not(windows))]
 pub(crate) type ThreadedInstr = unsafe extern "C" fn(
     ip: Ip,
@@ -4047,6 +4046,7 @@ threaded_instr!(enter(
 // Helper functions
 
 /// Executes the next instruction.
+#[expect(clippy::too_many_arguments)]
 pub(crate) unsafe fn next_instr(
     ip: Ip,
     sp: Sp,

@@ -162,7 +162,7 @@ impl Table {
         src_idx: u32,
         count: u32,
     ) -> Result<(), Trap> {
-        let (dst_table, src_elem) = HandlePair(self.0, src_elem.0).as_mut_pair(store);
+        let (dst_table, src_elem) = HandlePair(self.0, src_elem.0).into_mut_pair(store);
         match (dst_table, src_elem) {
             (TableEntity::FuncRef(table), ElemEntity::FuncRef(src_elem)) => {
                 table.init(dst_idx, src_elem, src_idx, count)

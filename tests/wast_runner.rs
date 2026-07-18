@@ -23,7 +23,7 @@ pub struct WastRunner {
 impl WastRunner {
     pub fn new() -> Self {
         let mut store = Store::new(Engine::new());
-        let mut linker = Linker::new();
+        let mut linker = Linker::default();
         let print = Func::wrap(&mut store, || {
             println!("print");
         });

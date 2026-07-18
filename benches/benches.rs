@@ -11,7 +11,7 @@ fn new_store_and_instance(input: &str) -> (makepad_stitch::Store, makepad_stitch
     let mut wat = parser::parse::<Wat>(&buffer).unwrap();
     let bytes = wat.encode().unwrap();
     let module = Module::new(store.engine(), &bytes).unwrap();
-    let instance = Linker::new().instantiate(&mut store, &module).unwrap();
+    let instance = Linker::default().instantiate(&mut store, &module).unwrap();
     (store, instance)
 }
 

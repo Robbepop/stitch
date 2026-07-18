@@ -196,6 +196,7 @@ macro_rules! impl_host_val_list {
 
             #[allow(unused_variables)]
             unsafe fn read_from_stack(ptr: &mut *mut StackSlot, store_id: StoreId) -> Self {
+                #[allow(clippy::unused_unit)]
                 ($(unsafe { $Ti::read_from_stack(ptr, store_id) },)*)
             }
 

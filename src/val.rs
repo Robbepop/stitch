@@ -319,10 +319,7 @@ pub enum ValType {
 impl ValType {
     /// Returns `true` if this [`ValType`] is a number type.
     pub fn is_num(self) -> bool {
-        match self {
-            Self::I32 | Self::I64 | Self::F32 | Self::F64 => true,
-            _ => false,
-        }
+        matches!(self, Self::I32 | Self::I64 | Self::F32 | Self::F64)
     }
 
     /// Returns `true` if this [`ValType`] is a `RefType`.

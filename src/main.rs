@@ -13,7 +13,7 @@ fn main() {
     let mut store = Store::new(engine);
     let bytes = fs::read(wasm_file).unwrap();
     let module = Module::new(store.engine(), &bytes).unwrap();
-    let linker = Linker::new();
+    let linker = Linker::default();
     let instance = linker.instantiate(&mut store, &module).unwrap();
     let func = instance.exported_func(&func_name).unwrap();
     let args: Vec<_> = func
