@@ -73,7 +73,7 @@ impl Func {
     ///
     /// The given [`UnguardedFunc`] must be owned by the [`Store`] with the given [`StoreId`].
     pub(crate) unsafe fn from_unguarded(func: UnguardedFunc, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(func, store_id))
+        Self(unsafe { Handle::from_unguarded(func, store_id) })
     }
 
     /// Converts this [`Func`] to an [`UnguardedFunc`].

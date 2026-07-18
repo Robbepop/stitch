@@ -180,7 +180,7 @@ impl Table {
     ///
     /// The given [`UnguardedTable`] must be owned by the [`Store`] with the given [`StoreId`].
     pub(crate) unsafe fn from_unguarded(table: UnguardedTable, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(table, store_id))
+        Self(unsafe { Handle::from_unguarded(table, store_id) })
     }
 
     /// Converts this [`Table`] to an [`UnguardedTable`].

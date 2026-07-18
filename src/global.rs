@@ -143,7 +143,7 @@ impl Global {
     ///
     /// The given [`UnguardedGlobal`] must be owned by the [`Store`] with the given [`StoreId`].
     pub(crate) unsafe fn from_unguarded(global: UnguardedGlobal, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(global, store_id))
+        Self(unsafe { Handle::from_unguarded(global, store_id) })
     }
 
     /// Converts this [`Global`] to an [`UnguardedGlobal`].

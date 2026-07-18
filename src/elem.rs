@@ -38,7 +38,7 @@ impl Elem {
     }
 
     pub(crate) unsafe fn from_unguarded(elem: UnguardedElem, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(elem, store_id))
+        Self(unsafe { Handle::from_unguarded(elem, store_id) })
     }
 
     pub(crate) fn to_unguarded(self, store_id: StoreId) -> UnguardedElem {

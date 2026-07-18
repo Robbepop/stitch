@@ -195,10 +195,10 @@ pub(crate) fn exec(
 
             // Create a trampoline for the [`WasmFuncEntity`].
             let mut trampoline = [
-                call_wasm as InstrSlot,
+                call_wasm as ThreadedInstr as InstrSlot,
                 code.code.as_mut_ptr() as InstrSlot,
                 type_.call_frame_size() * mem::size_of::<StackSlot>(),
-                stop as InstrSlot,
+                stop as ThreadedInstr as InstrSlot,
             ];
 
             // Create an execution context.
@@ -288,9 +288,14 @@ pub(crate) fn exec(
 // Helper macros
 
 /// A helper macro for defining a `ThreadedInstr` with the correct ABI.
+//
+// The instruction body is spliced into an `unsafe` block, since the body of a threaded
+// instruction almost always performs unsafe operations. Instructions whose body is entirely
+// safe are marked with a leading `safe` to skip the wrapping and avoid an `unused_unsafe`
+// warning.
 #[cfg(windows)]
 macro_rules! threaded_instr {
-    ($name:ident(
+    (safe $name:ident(
         $ip:ident: Ip,
         $sp:ident: Sp,
         $md:ident: Md,
@@ -299,7 +304,7 @@ macro_rules! threaded_instr {
         $sx:ident: Sx,
         $dx:ident: Dx,
         $cx:ident: Cx,
-    ) -> ControlFlowBits $body:block) => {
+    ) -> ControlFlowBits { $($body:tt)* }) => {
         pub(crate) unsafe extern "sysv64" fn $name(
             $ip: Ip,
             $sp: Sp,
@@ -309,11 +314,8 @@ macro_rules! threaded_instr {
             $sx: Sx,
             $dx: Dx,
             $cx: Cx,
-        ) -> ControlFlowBits $body
+        ) -> ControlFlowBits { $($body)* }
     };
-}
-#[cfg(not(windows))]
-macro_rules! threaded_instr {
     ($name:ident(
         $ip:ident: Ip,
         $sp:ident: Sp,
@@ -323,7 +325,31 @@ macro_rules! threaded_instr {
         $sx:ident: Sx,
         $dx:ident: Dx,
         $cx:ident: Cx,
-    ) -> ControlFlowBits $body:block) => {
+    ) -> ControlFlowBits { $($body:tt)* }) => {
+        pub(crate) unsafe extern "sysv64" fn $name(
+            $ip: Ip,
+            $sp: Sp,
+            $md: Md,
+            $ms: Ms,
+            $ix: Ix,
+            $sx: Sx,
+            $dx: Dx,
+            $cx: Cx,
+        ) -> ControlFlowBits { unsafe { $($body)* } }
+    };
+}
+#[cfg(not(windows))]
+macro_rules! threaded_instr {
+    (safe $name:ident(
+        $ip:ident: Ip,
+        $sp:ident: Sp,
+        $md:ident: Md,
+        $ms:ident: Ms,
+        $ix:ident: Ix,
+        $sx:ident: Sx,
+        $dx:ident: Dx,
+        $cx:ident: Cx,
+    ) -> ControlFlowBits { $($body:tt)* }) => {
         pub(crate) unsafe extern "C" fn $name(
             $ip: Ip,
             $sp: Sp,
@@ -333,7 +359,28 @@ macro_rules! threaded_instr {
             $sx: Sx,
             $dx: Dx,
             $cx: Cx,
-        ) -> ControlFlowBits $body
+        ) -> ControlFlowBits { $($body)* }
+    };
+    ($name:ident(
+        $ip:ident: Ip,
+        $sp:ident: Sp,
+        $md:ident: Md,
+        $ms:ident: Ms,
+        $ix:ident: Ix,
+        $sx:ident: Sx,
+        $dx:ident: Dx,
+        $cx:ident: Cx,
+    ) -> ControlFlowBits { $($body:tt)* }) => {
+        pub(crate) unsafe extern "C" fn $name(
+            $ip: Ip,
+            $sp: Sp,
+            $md: Md,
+            $ms: Ms,
+            $ix: Ix,
+            $sx: Sx,
+            $dx: Dx,
+            $cx: Cx,
+        ) -> ControlFlowBits { unsafe { $($body)* } }
     };
 }
 
@@ -349,7 +396,7 @@ macro_rules! r#try {
 
 // Control instructions
 
-threaded_instr!(unreachable(
+threaded_instr!(safe unreachable(
     _ip: Ip,
     _sp: Sp,
     _md: Md,
@@ -3917,7 +3964,7 @@ copy_reg_to_stack!(copy_reg_to_stack_f64, f64);
 copy_reg_to_stack!(copy_reg_to_stack_func_ref, UnguardedFuncRef);
 copy_reg_to_stack!(copy_reg_to_stack_extern_ref, UnguardedExternRef);
 
-threaded_instr!(stop(
+threaded_instr!(safe stop(
     _ip: Ip,
     _sp: Sp,
     _md: Md,
@@ -4010,8 +4057,10 @@ pub(crate) unsafe fn next_instr(
     dx: Dx,
     cx: Cx,
 ) -> ControlFlowBits {
-    let (instr, ip): (ThreadedInstr, _) = read_imm(ip);
-    (instr)(ip, sp, md, ms, ix, sx, dx, cx)
+    unsafe {
+        let (instr, ip): (ThreadedInstr, _) = read_imm(ip);
+        (instr)(ip, sp, md, ms, ix, sx, dx, cx)
+    }
 }
 
 /// Reads an immediate value.
@@ -4019,9 +4068,11 @@ unsafe fn read_imm<T>(ip: Ip) -> (T, Ip)
 where
     T: Copy,
 {
-    let val = *ip.cast();
-    let ip = ip.add(1);
-    (val, ip)
+    unsafe {
+        let val = *ip.cast();
+        let ip = ip.add(1);
+        (val, ip)
+    }
 }
 
 /// Reads a value from the stack.
@@ -4029,11 +4080,13 @@ unsafe fn read_stack<T>(ip: Ip, sp: Sp) -> (T, Ip)
 where
     T: Copy + std::fmt::Debug,
 {
-    let (offset, ip) = read_imm(ip);
-    // The cast to `u8` is because stack offsets are premultiplied, which allows us to avoid
-    // generating a shift instruction on some platforms.
-    let x = *sp.cast::<u8>().offset(offset).cast::<T>();
-    (x, ip)
+    unsafe {
+        let (offset, ip) = read_imm(ip);
+        // The cast to `u8` is because stack offsets are premultiplied, which allows us to avoid
+        // generating a shift instruction on some platforms.
+        let x = *sp.cast::<u8>().offset(offset).cast::<T>();
+        (x, ip)
+    }
 }
 
 /// Writes a value to the stack.
@@ -4041,11 +4094,13 @@ unsafe fn write_stack<T>(ip: Ip, sp: Sp, x: T) -> Ip
 where
     T: Copy + std::fmt::Debug,
 {
-    let (offset, ip) = read_imm(ip);
-    // The cast to `u8` is because stack offsets are premultiplied, which allows us to avoid
-    // generating a shift instruction on some platforms.
-    *sp.cast::<u8>().offset(offset).cast() = x;
-    ip
+    unsafe {
+        let (offset, ip) = read_imm(ip);
+        // The cast to `u8` is because stack offsets are premultiplied, which allows us to avoid
+        // generating a shift instruction on some platforms.
+        *sp.cast::<u8>().offset(offset).cast() = x;
+        ip
+    }
 }
 
 /// Reads a value from a register.

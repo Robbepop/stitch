@@ -166,11 +166,11 @@ where
     }
 
     unsafe fn read_from_stack(ptr: &mut *mut StackSlot, store_id: StoreId) -> Self {
-        T::read_from_stack(ptr, store_id)
+        unsafe { T::read_from_stack(ptr, store_id) }
     }
 
     unsafe fn write_to_stack(self, ptr: &mut *mut StackSlot, store_id: StoreId) {
-        <Self as HostVal>::write_to_stack(self, ptr, store_id);
+        unsafe { <Self as HostVal>::write_to_stack(self, ptr, store_id) };
     }
 }
 
@@ -188,14 +188,14 @@ macro_rules! impl_host_val_list {
 
             #[allow(unused_variables)]
             unsafe fn read_from_stack(ptr: &mut *mut StackSlot, store_id: StoreId) -> Self {
-                ($($Ti::read_from_stack(ptr, store_id),)*)
+                ($(unsafe { $Ti::read_from_stack(ptr, store_id) },)*)
             }
 
             #[allow(non_snake_case)]
             #[allow(unused_variables)]
             unsafe fn write_to_stack(self, ptr: &mut *mut StackSlot, store_id: StoreId) {
                 let ($($Ti,)*) = self;
-                $($Ti.write_to_stack(ptr, store_id);)*
+                $(unsafe { $Ti.write_to_stack(ptr, store_id); })*
             }
         }
     }
@@ -219,14 +219,18 @@ macro_rules! impl_host_val {
             }
 
             unsafe fn read_from_stack(ptr: &mut *mut StackSlot, _store_id: StoreId) -> Self {
-                let val = *ptr.cast::<$T>();
-                *ptr = ptr.add(1);
-                val
+                unsafe {
+                    let val = *ptr.cast::<$T>();
+                    *ptr = ptr.add(1);
+                    val
+                }
             }
 
             unsafe fn write_to_stack(self, ptr: &mut *mut StackSlot, _store_id: StoreId) {
-                *ptr.cast::<$T>() = self;
-                *ptr = ptr.add(1);
+                unsafe {
+                    *ptr.cast::<$T>() = self;
+                    *ptr = ptr.add(1);
+                }
             }
         }
     };
@@ -240,14 +244,18 @@ macro_rules! impl_host_val_raw {
             }
 
             unsafe fn read_from_stack(ptr: &mut *mut StackSlot, store_id: StoreId) -> Self {
-                let val = <$T>::from_unguarded(*ptr.cast::<$RawT>(), store_id);
-                *ptr = ptr.add(1);
-                val
+                unsafe {
+                    let val = <$T>::from_unguarded(*ptr.cast::<$RawT>(), store_id);
+                    *ptr = ptr.add(1);
+                    val
+                }
             }
 
             unsafe fn write_to_stack(self, ptr: &mut *mut StackSlot, store_id: StoreId) {
-                *ptr.cast::<$RawT>() = self.to_unguarded(store_id);
-                *ptr = ptr.add(1);
+                unsafe {
+                    *ptr.cast::<$RawT>() = self.to_unguarded(store_id);
+                    *ptr = ptr.add(1);
+                }
             }
         }
     };

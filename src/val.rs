@@ -149,8 +149,10 @@ impl Val {
             UnguardedVal::I64(val) => val.into(),
             UnguardedVal::F32(val) => val.into(),
             UnguardedVal::F64(val) => val.into(),
-            UnguardedVal::FuncRef(val) => FuncRef::from_unguarded(val, store_id).into(),
-            UnguardedVal::ExternRef(val) => ExternRef::from_unguarded(val, store_id).into(),
+            UnguardedVal::FuncRef(val) => unsafe { FuncRef::from_unguarded(val, store_id) }.into(),
+            UnguardedVal::ExternRef(val) => {
+                unsafe { ExternRef::from_unguarded(val, store_id) }.into()
+            }
         }
     }
 
@@ -230,26 +232,30 @@ pub(crate) enum UnguardedVal {
 impl UnguardedVal {
     /// Reads an [`UnguardedVal`] of the given [`ValType`] from the given stack slot.
     pub(crate) unsafe fn read_from_stack(ptr: *const StackSlot, type_: ValType) -> Self {
-        let val = match type_ {
-            ValType::I32 => (*ptr.cast::<i32>()).into(),
-            ValType::I64 => (*ptr.cast::<i64>()).into(),
-            ValType::F32 => (*ptr.cast::<f32>()).into(),
-            ValType::F64 => (*ptr.cast::<f64>()).into(),
-            ValType::FuncRef => (*ptr.cast::<UnguardedFuncRef>()).into(),
-            ValType::ExternRef => (*ptr.cast::<UnguardedExternRef>()).into(),
-        };
-        val
+        unsafe {
+            let val = match type_ {
+                ValType::I32 => (*ptr.cast::<i32>()).into(),
+                ValType::I64 => (*ptr.cast::<i64>()).into(),
+                ValType::F32 => (*ptr.cast::<f32>()).into(),
+                ValType::F64 => (*ptr.cast::<f64>()).into(),
+                ValType::FuncRef => (*ptr.cast::<UnguardedFuncRef>()).into(),
+                ValType::ExternRef => (*ptr.cast::<UnguardedExternRef>()).into(),
+            };
+            val
+        }
     }
 
     /// Writes this [`UnguardedVal`] to the given stack slot.
     pub(crate) unsafe fn write_to_stack(self, ptr: *mut StackSlot) {
-        match self {
-            UnguardedVal::I32(val) => *ptr.cast() = val,
-            UnguardedVal::I64(val) => *ptr.cast() = val,
-            UnguardedVal::F32(val) => *ptr.cast() = val,
-            UnguardedVal::F64(val) => *ptr.cast() = val,
-            UnguardedVal::FuncRef(val) => *ptr.cast() = val,
-            UnguardedVal::ExternRef(val) => *ptr.cast() = val,
+        unsafe {
+            match self {
+                UnguardedVal::I32(val) => *ptr.cast() = val,
+                UnguardedVal::I64(val) => *ptr.cast() = val,
+                UnguardedVal::F32(val) => *ptr.cast() = val,
+                UnguardedVal::F64(val) => *ptr.cast() = val,
+                UnguardedVal::FuncRef(val) => *ptr.cast() = val,
+                UnguardedVal::ExternRef(val) => *ptr.cast() = val,
+            }
         }
     }
 }

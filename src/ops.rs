@@ -416,19 +416,19 @@ pub(crate) trait Reinterpret<T>: Sized {
 }
 
 macro_rules! impl_reinterpret {
-    ($T:ty, $U:ty) => {
+    ($T:ty, $U:ty, $convert:expr) => {
         impl Reinterpret<$T> for $U {
             fn reinterpret(val: $T) -> Result<Self, Trap> {
-                Ok(unsafe { mem::transmute(val) })
+                Ok($convert(val))
             }
         }
     };
 }
 
-impl_reinterpret!(f32, u32);
-impl_reinterpret!(f64, u64);
-impl_reinterpret!(u32, f32);
-impl_reinterpret!(u64, f64);
+impl_reinterpret!(f32, u32, f32::to_bits);
+impl_reinterpret!(f64, u64, f64::to_bits);
+impl_reinterpret!(u32, f32, f32::from_bits);
+impl_reinterpret!(u64, f64, f64::from_bits);
 
 pub(crate) trait ExtendN<T>: Sized {
     fn extend_n(self) -> Result<Self, Trap>;

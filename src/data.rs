@@ -18,7 +18,7 @@ impl Data {
     }
 
     pub(crate) unsafe fn from_unguarded(data: UnguardedData, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(data, store_id))
+        Self(unsafe { Handle::from_unguarded(data, store_id) })
     }
 
     pub(crate) fn to_unguarded(self, store_id: StoreId) -> UnguardedData {

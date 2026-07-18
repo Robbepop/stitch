@@ -77,7 +77,7 @@ impl Mem {
     ///
     /// The given [`UnguardedMem`] must be owned by the [`Store`] with the given [`StoreId`].
     pub(crate) unsafe fn from_unguarded(memory: UnguardedMem, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(memory, store_id))
+        Self(unsafe { Handle::from_unguarded(memory, store_id) })
     }
 
     /// Converts this [`Mem`] to an [`UnguardedMem`].
@@ -214,12 +214,14 @@ impl MemEntity {
         // frames on the stack, and update the value of the `md` and `ms` register to store
         // a pointer to the new data and size of this [`Memory`] instead.
         let mut ptr = stack.ptr();
-        while ptr != stack.base_ptr() {
-            if *ptr.offset(-2).cast::<*mut u8>() == old_data {
-                *ptr.offset(-2).cast() = new_data;
-                *ptr.offset(-1).cast() = new_size;
+        unsafe {
+            while ptr != stack.base_ptr() {
+                if *ptr.offset(-2).cast::<*mut u8>() == old_data {
+                    *ptr.offset(-2).cast() = new_data;
+                    *ptr.offset(-1).cast() = new_size;
+                }
+                ptr = *ptr.offset(-3).cast();
             }
-            ptr = *ptr.offset(-3).cast();
         }
 
         Ok(old_size)

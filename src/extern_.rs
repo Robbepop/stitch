@@ -16,7 +16,7 @@ impl Extern {
     }
 
     pub(crate) unsafe fn from_unguarded(extern_: UnguardedExtern, store_id: StoreId) -> Self {
-        Self(Handle::from_unguarded(extern_, store_id))
+        Self(unsafe { Handle::from_unguarded(extern_, store_id) })
     }
 
     pub(crate) fn to_unguarded(self, store_id: StoreId) -> UnguardedExtern {

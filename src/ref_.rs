@@ -62,8 +62,10 @@ impl Ref {
     /// The [`UnguardedRef`] must be owned by the [`Store`] with the given [`StoreId`].
     pub(crate) unsafe fn from_unguarded(val: UnguardedRef, store_id: StoreId) -> Self {
         match val {
-            UnguardedRef::FuncRef(val) => FuncRef::from_unguarded(val, store_id).into(),
-            UnguardedRef::ExternRef(val) => ExternRef::from_unguarded(val, store_id).into(),
+            UnguardedRef::FuncRef(val) => unsafe { FuncRef::from_unguarded(val, store_id) }.into(),
+            UnguardedRef::ExternRef(val) => {
+                unsafe { ExternRef::from_unguarded(val, store_id) }.into()
+            }
         }
     }
 
