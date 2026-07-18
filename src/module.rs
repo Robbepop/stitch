@@ -63,23 +63,22 @@ impl Module {
         let mut decoder = Decoder::new(bytes);
         let magic = decoder.read_bytes(4)?;
         if magic != MAGIC {
-            return Err(DecodeError::new(""))?;
+            Err(DecodeError::new(""))?;
         }
         let version = decoder.read_bytes(4)?;
         if version != VERSION {
-            return Err(DecodeError::new(""))?;
+            Err(DecodeError::new(""))?;
         }
         let mut builder = ModuleBuilder::new();
         let mut expected_section_ids = EXPECTED_SECTION_IDS.iter().copied();
         while !decoder.is_at_end() {
             let section_id = decoder.read_byte()?;
-            if section_id != 0 {
-                if !expected_section_ids
+            if section_id != 0
+                && !expected_section_ids
                     .any(|expected_section_id| expected_section_id == section_id)
                 {
-                    return Err(DecodeError::new("section id mismatch"))?;
+                    Err(DecodeError::new("section id mismatch"))?;
                 }
-            }
             let mut section_decoder = decoder.decode_decoder()?;
             match section_id {
                 // Custom section
@@ -159,7 +158,7 @@ impl Module {
                 _ => unreachable!(),
             }
             if !section_decoder.is_at_end() {
-                return Err(DecodeError::new(""))?;
+                Err(DecodeError::new(""))?;
             }
         }
         builder.finish(engine)
@@ -207,7 +206,7 @@ impl Module {
                         .ok_or(InstantiateError::DefNotFound)?;
                     let func = val.to_func().ok_or(InstantiateError::ImportKindMismatch)?;
                     if func.type_(store) != &type_ {
-                        return Err(InstantiateError::FuncTypeMismatch)?;
+                        Err(InstantiateError::FuncTypeMismatch)?;
                     }
                     initer.push_func(func);
                 }
@@ -219,7 +218,7 @@ impl Module {
                         .to_global()
                         .ok_or(InstantiateError::ImportKindMismatch)?;
                     if global.type_(store) != type_ {
-                        return Err(InstantiateError::GlobalTypeMismatch)?;
+                        Err(InstantiateError::GlobalTypeMismatch)?;
                     }
                     initer.push_global(global);
                 }
@@ -270,7 +269,7 @@ impl Module {
                         .ok_or(InstantiateError::DefNotFound)?;
                     let table = val.to_table().ok_or(InstantiateError::ImportKindMismatch)?;
                     if !table.type_(store).is_subtype_of(type_) {
-                        return Err(InstantiateError::TableTypeMismatch)?;
+                        Err(InstantiateError::TableTypeMismatch)?;
                     }
                     initer.push_table(table);
                 }
@@ -280,7 +279,7 @@ impl Module {
                         .ok_or(InstantiateError::DefNotFound)?;
                     let mem = val.to_mem().ok_or(InstantiateError::ImportKindMismatch)?;
                     if !mem.type_(store).is_subtype_of(type_) {
-                        return Err(InstantiateError::MemTypeMismatch)?;
+                        Err(InstantiateError::MemTypeMismatch)?;
                     }
                     initer.push_mem(mem);
                 }
@@ -611,7 +610,7 @@ impl ModuleBuilder {
                     return Err(DecodeError::new("too many tables"));
                 }
                 if !type_.is_valid() {
-                    return Err(DecodeError::new("invalid table type"))?;
+                    Err(DecodeError::new("invalid table type"))?;
                 }
                 self.imports.push((key, ImportKind::Table));
                 self.imported_table_count += 1;
@@ -660,7 +659,7 @@ impl ModuleBuilder {
             return Err(DecodeError::new("too many tables"));
         }
         if !table.type_.is_valid() {
-            return Err(DecodeError::new("invalid table type"))?;
+            Err(DecodeError::new("invalid table type"))?;
         }
         self.table_types.push(table.type_);
         Ok(())
@@ -729,7 +728,7 @@ impl ModuleBuilder {
 
     fn push_code(&mut self, code: UncompiledCode) -> Result<(), DecodeError> {
         if self.codes.len() == self.func_types.len() - self.imported_func_count {
-            return Err(DecodeError::new(
+            Err(DecodeError::new(
                 "function and code section have inconsistent sizes",
             ))?;
         }
@@ -804,7 +803,7 @@ impl ModuleBuilder {
 
     fn finish(self, engine: &Engine) -> Result<Module, DecodeError> {
         if self.func_types.len() - self.imported_func_count > self.codes.len() {
-            return Err(DecodeError::new(
+            Err(DecodeError::new(
                 "function and code section have inconsistent sizes",
             ))?;
         }
@@ -814,13 +813,12 @@ impl ModuleBuilder {
         {
             engine.validate(type_, &self, code)?;
         }
-        if let Some(data_count) = self.data_count {
-            if data_count != u32::try_from(self.datas.len()).unwrap() {
-                return Err(DecodeError::new(
+        if let Some(data_count) = self.data_count
+            && data_count != u32::try_from(self.datas.len()).unwrap() {
+                Err(DecodeError::new(
                     "data count and data section have inconsistent sizes",
                 ))?;
             }
-        }
         Ok(Module {
             types: self.types.into(),
             imports: self.imports.into(),
@@ -976,7 +974,7 @@ impl Decode for ElemDef {
             } else {
                 decoder
                     .decode_iter::<u32>()?
-                    .map(|func_idx| func_idx.map(|func_idx| ConstExpr::new_ref_func(func_idx)))
+                    .map(|func_idx| func_idx.map(ConstExpr::new_ref_func))
                     .collect::<Result<_, _>>()?
             },
         })

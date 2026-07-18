@@ -233,15 +233,15 @@ impl UnguardedVal {
     /// Reads an [`UnguardedVal`] of the given [`ValType`] from the given stack slot.
     pub(crate) unsafe fn read_from_stack(ptr: *const StackSlot, type_: ValType) -> Self {
         unsafe {
-            let val = match type_ {
+            
+            match type_ {
                 ValType::I32 => (*ptr.cast::<i32>()).into(),
                 ValType::I64 => (*ptr.cast::<i64>()).into(),
                 ValType::F32 => (*ptr.cast::<f32>()).into(),
                 ValType::F64 => (*ptr.cast::<f64>()).into(),
                 ValType::FuncRef => (*ptr.cast::<UnguardedFuncRef>()).into(),
                 ValType::ExternRef => (*ptr.cast::<UnguardedExternRef>()).into(),
-            };
-            val
+            }
         }
     }
 

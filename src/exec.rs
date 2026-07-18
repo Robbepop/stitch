@@ -167,7 +167,7 @@ pub(crate) fn exec(
     // Check that the stack has enough space.
     let stack_height = unsafe { stack.ptr().offset_from(stack.base_ptr()) as usize };
     if type_.call_frame_size() > Stack::SIZE - stack_height {
-        return Err(Trap::StackOverflow)?;
+        Err(Trap::StackOverflow)?;
     }
 
     // Copy the arguments to the stack.
@@ -245,7 +245,7 @@ pub(crate) fn exec(
                         // Reset the stack to the start of the call frame.
                         unsafe { stack.set_ptr(ptr) };
 
-                        return Err(trap)?;
+                        Err(trap)?;
                     }
                     ControlFlow::Error => {
                         stack = context.stack.take().unwrap();
@@ -4135,7 +4135,7 @@ impl ReadReg for i64 {
 
 impl ReadReg for u64 {
     fn read_reg(ix: Ix, _sx: Sx, _dx: Dx) -> Self {
-        ix as u64
+        ix
     }
 }
 

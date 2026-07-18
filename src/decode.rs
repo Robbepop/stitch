@@ -47,14 +47,14 @@ impl<'a> Decoder<'a> {
     #[inline]
     pub(crate) fn decode_bytes(&mut self) -> Result<&'a [u8], DecodeError> {
         let len: u32 = self.decode()?;
-        Ok(self.read_bytes(len as usize)?)
+        self.read_bytes(len as usize)
     }
 
     #[inline]
     pub(crate) fn decode_string(&mut self) -> Result<&'a str, DecodeError> {
         let len: u32 = self.decode()?;
-        Ok(str::from_utf8(self.read_bytes(len as usize)?)
-            .map_err(|_| DecodeError::new("malformed string"))?)
+        str::from_utf8(self.read_bytes(len as usize)?)
+            .map_err(|_| DecodeError::new("malformed string"))
     }
 
     pub(crate) fn decode_iter<T>(&mut self) -> Result<DecodeIter<'_, 'a, T>, DecodeError>
@@ -153,7 +153,7 @@ impl Decode for u32 {
             let mut shift = 7;
             loop {
                 let byte = decoder.read_byte()?;
-                if shift >= 25 && byte >> 32 - shift != 0 {
+                if shift >= 25 && byte >> (32 - shift) != 0 {
                     return Err(DecodeError::new("malformed u32"));
                 }
                 val |= ((byte & 0x7F) as u32) << shift;

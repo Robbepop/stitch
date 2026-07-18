@@ -345,7 +345,7 @@ impl<'a> Compile<'a> {
             next_opd_idx: None,
             is_reg: false,
         });
-        let stack_height = self.first_temp_stack_idx as usize + (self.opds.len() - 1);
+        let stack_height = self.first_temp_stack_idx + (self.opds.len() - 1);
         self.max_stack_height = self.max_stack_height.max(stack_height);
     }
 
@@ -1035,7 +1035,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let func = self.instance.func(func_idx).unwrap();
 
         // Obtain the type of the [`Func`] to be called.
-        let type_ = func.type_(&self.store).clone();
+        let type_ = func.type_(self.store).clone();
 
         // Functions expect all their arguments to be temporary operands, and all registers to be
         // available.
@@ -1046,7 +1046,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         self.preserve_all_regs();
 
         // Emit the instruction.
-        self.emit(match func.0.as_ref(&self.store) {
+        self.emit(match func.0.as_ref(self.store) {
             FuncEntity::Wasm(_) => exec::compile as ThreadedInstr,
             FuncEntity::Host(_) => exec::call_host as ThreadedInstr,
         });
@@ -1068,7 +1068,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         // Emit the stack offset of the end of the call frame.
         self.emit_stack_offset(call_frame_stack_end as isize);
 
-        if let FuncEntity::Host(_) = func.0.as_ref(&self.store) {
+        if let FuncEntity::Host(_) = func.0.as_ref(self.store) {
             self.emit(
                 self.instance
                     .mem(0)
@@ -1130,7 +1130,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         // attained by the [`Func`] being compiled.
         let call_frame_stack_start = self.first_temp_stack_idx + self.opds.len();
         let call_frame_stack_end = call_frame_stack_start + type_.call_frame_size();
-        self.max_stack_height = self.max_stack_height.max(call_frame_stack_end as usize);
+        self.max_stack_height = self.max_stack_height.max(call_frame_stack_end);
 
         // Emit the stack offset of the end of the call frame.
         self.emit_stack_offset(call_frame_stack_end as isize);
@@ -1386,7 +1386,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let global = self.instance.global(global_idx).unwrap();
 
         // Obtain the type of the [`Global`].
-        let val_type = global.type_(&self.store).val;
+        let val_type = global.type_(self.store).val;
 
         // Emit the instruction.
         self.emit(select_global_get(val_type));
@@ -1412,7 +1412,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let global = self.instance.global(global_idx).unwrap();
 
         // Obtain the type of the [`Global`].
-        let val_type = global.type_(&self.store).val;
+        let val_type = global.type_(self.store).val;
 
         // Emit the instruction.
         self.emit(select_global_set(val_type, self.opd(0).kind()));
@@ -1440,7 +1440,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.type_(&self.store).elem;
+        let elem_type = table.type_(self.store).elem;
 
         // Emit the instruction.
         self.emit(select_table_get(elem_type, self.opd(0).kind()));
@@ -1469,7 +1469,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.type_(&self.store).elem;
+        let elem_type = table.type_(self.store).elem;
 
         // Emit the instruction.
         self.emit(select_table_set(
@@ -1501,7 +1501,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.type_(&self.store).elem;
+        let elem_type = table.type_(self.store).elem;
 
         // Emit the instruction.
         self.emit(select_table_size(elem_type));
@@ -1527,7 +1527,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.type_(&self.store).elem;
+        let elem_type = table.type_(self.store).elem;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constant nor register
@@ -1567,7 +1567,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let table = self.instance.table(table_idx).unwrap();
 
         // Obtain the type of the elements in the [`Table`].
-        let elem_type = table.type_(&self.store).elem;
+        let elem_type = table.type_(self.store).elem;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constants nor stored in a
@@ -1608,7 +1608,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let src_table = self.instance.table(src_table_idx).unwrap();
 
         // Obtain the type of the elements in the destination [`Table`].
-        let elem_type = dst_table.type_(&self.store).elem;
+        let elem_type = dst_table.type_(self.store).elem;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constant nor register
@@ -1650,7 +1650,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let src_elem = self.instance.elem(src_elem_idx).unwrap();
 
         // Obtain the type of the elements in the destination [`Table`].
-        let elem_type = dst_table.type_(&self.store).elem;
+        let elem_type = dst_table.type_(self.store).elem;
 
         // This instruction has only one variant for each type, which reads all its operands from
         // the stack, so we need to ensure that all operands are neither constant nor register
@@ -1687,7 +1687,7 @@ impl<'a> InstrVisitor for Compile<'a> {
         let elem = self.instance.elem(elem_idx).unwrap();
 
         // Obtain the type of the elements in the [`Elem`].
-        let elem_type = elem.type_(&self.store);
+        let elem_type = elem.type_(self.store);
 
         // Emit the instruction.
         self.emit(select_elem_drop(elem_type));
@@ -2684,7 +2684,7 @@ fn select_copy_imm_to_stack(type_: ValType) -> ThreadedInstr {
 }
 
 fn select_copy_stack(type_: ValType) -> ThreadedInstr {
-    match type_.into() {
+    match type_ {
         ValType::I32 => exec::copy_stack_i32,
         ValType::I64 => exec::copy_stack_i64,
         ValType::F32 => exec::copy_stack_f32,

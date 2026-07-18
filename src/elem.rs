@@ -42,7 +42,7 @@ impl Elem {
     }
 
     pub(crate) fn to_unguarded(self, store_id: StoreId) -> UnguardedElem {
-        self.0.to_unguarded(store_id).into()
+        self.0.to_unguarded(store_id)
     }
 }
 

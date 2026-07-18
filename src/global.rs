@@ -127,12 +127,30 @@ impl Global {
             return Err(GlobalError::Immutable);
         }
         match (self.0.as_mut(store), val) {
-            (GlobalEntity::I32(global), UnguardedVal::I32(val)) => Ok(global.set(val)),
-            (GlobalEntity::I64(global), UnguardedVal::I64(val)) => Ok(global.set(val)),
-            (GlobalEntity::F32(global), UnguardedVal::F32(val)) => Ok(global.set(val)),
-            (GlobalEntity::F64(global), UnguardedVal::F64(val)) => Ok(global.set(val)),
-            (GlobalEntity::FuncRef(global), UnguardedVal::FuncRef(val)) => Ok(global.set(val)),
-            (GlobalEntity::ExternRef(global), UnguardedVal::ExternRef(val)) => Ok(global.set(val)),
+            (GlobalEntity::I32(global), UnguardedVal::I32(val)) => {
+                let _: () = global.set(val);
+                Ok(())
+            },
+            (GlobalEntity::I64(global), UnguardedVal::I64(val)) => {
+                let _: () = global.set(val);
+                Ok(())
+            },
+            (GlobalEntity::F32(global), UnguardedVal::F32(val)) => {
+                let _: () = global.set(val);
+                Ok(())
+            },
+            (GlobalEntity::F64(global), UnguardedVal::F64(val)) => {
+                let _: () = global.set(val);
+                Ok(())
+            },
+            (GlobalEntity::FuncRef(global), UnguardedVal::FuncRef(val)) => {
+                let _: () = global.set(val);
+                Ok(())
+            },
+            (GlobalEntity::ExternRef(global), UnguardedVal::ExternRef(val)) => {
+                let _: () = global.set(val);
+                Ok(())
+            },
             _ => Err(GlobalError::ValTypeMismatch),
         }
     }
@@ -152,7 +170,7 @@ impl Global {
     ///
     /// If this [`Global`] is not owned by the [`Store`] with the given [`StoreId`].
     pub(crate) fn to_unguarded(self, store_id: StoreId) -> UnguardedGlobal {
-        self.0.to_unguarded(store_id).into()
+        self.0.to_unguarded(store_id)
     }
 }
 

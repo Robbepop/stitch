@@ -44,14 +44,14 @@ impl Func {
     pub fn call(self, store: &mut Store, args: &[Val], results: &mut [Val]) -> Result<(), Error> {
         let type_ = self.type_(store);
         if args.len() != type_.params().len() {
-            return Err(FuncError::ParamCountMismatch)?;
+            Err(FuncError::ParamCountMismatch)?;
         }
         if results.len() != type_.results().len() {
-            return Err(FuncError::ResultCountMismatch)?;
+            Err(FuncError::ResultCountMismatch)?;
         }
         for (arg, param_type) in args.iter().zip(type_.params().iter().copied()) {
             if arg.type_() != param_type {
-                return Err(FuncError::ParamTypeMismatch)?;
+                Err(FuncError::ParamTypeMismatch)?;
             }
         }
         exec::exec(store, self, args, results)
@@ -177,7 +177,7 @@ impl FuncType {
 impl Decode for FuncType {
     fn decode(decoder: &mut Decoder<'_>) -> Result<Self, DecodeError> {
         if decoder.read_byte()? != 0x60 {
-            return Err(DecodeError::new("malformed function type"))?;
+            Err(DecodeError::new("malformed function type"))?;
         }
         let mut param_result_types: Vec<_> = decoder.decode_iter()?.collect::<Result<_, _>>()?;
         let param_count = param_result_types.len();

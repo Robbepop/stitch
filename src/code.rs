@@ -24,7 +24,7 @@ pub(crate) struct UncompiledCode {
 
 impl Decode for UncompiledCode {
     fn decode(decoder: &mut Decoder<'_>) -> Result<Self, DecodeError> {
-        use std::iter;
+        
 
         let mut code_decoder = decoder.decode_decoder()?;
         Ok(Self {
@@ -35,7 +35,7 @@ impl Decode for UncompiledCode {
                     if count > usize::try_from(u32::MAX).unwrap() - locals.len() {
                         return Err(DecodeError::new("too many locals"));
                     }
-                    locals.extend(iter::repeat(code_decoder.decode::<ValType>()?).take(count));
+                    locals.extend(std::iter::repeat_n(code_decoder.decode::<ValType>()?, count));
                 }
                 locals.into()
             },
@@ -136,7 +136,7 @@ impl Decode for BlockType {
             let mut shift = 0;
             loop {
                 let byte = decoder.read_byte()?;
-                if shift >= 26 && byte >> 33 - shift != 0 {
+                if shift >= 26 && byte >> (33 - shift) != 0 {
                     let sign = (byte << 1) as i8 >> (33 - shift);
                     if byte & 0x80 != 0x00 || sign != 0 && sign != -1 {
                         return Err(DecodeError::new("malformed s33"));
@@ -254,7 +254,7 @@ where
             for label_idx in decoder.decode_iter()? {
                 label_idxs.push(label_idx?);
             }
-            visitor.visit_br_table(&label_idxs, decoder.decode()?)?;
+            visitor.visit_br_table(label_idxs, decoder.decode()?)?;
             Ok(())
         }
         0x0F => visitor.visit_return(),

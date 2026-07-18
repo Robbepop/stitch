@@ -356,7 +356,7 @@ where
     /// If this [`TableEntity`] failed to grow.
     pub(crate) fn grow(&mut self, val: T, count: u32) -> Result<u32, TableError> {
         if count > self.max.unwrap_or(u32::MAX) - self.size() {
-            return Err(TableError::FailedToGrow)?;
+            Err(TableError::FailedToGrow)?;
         }
         let count = count as usize;
         let size = self.size();
@@ -413,7 +413,7 @@ where
             || dst_idx > self.elems.len() - count
             || src_idx > self.elems.len() - count
         {
-            return Err(Trap::TableAccessOutOfBounds)?;
+            Err(Trap::TableAccessOutOfBounds)?;
         }
         self.elems.copy_within(src_idx..src_idx + count, dst_idx);
         Ok(())

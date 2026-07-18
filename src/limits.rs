@@ -17,7 +17,7 @@ impl Limits {
         if self.min > limit {
             return false;
         }
-        if self.max.map_or(false, |max| max < self.min || max > limit) {
+        if self.max.is_some_and(|max| max < self.min || max > limit) {
             return false;
         }
         true

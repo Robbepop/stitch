@@ -41,7 +41,7 @@ impl DataEntity {
     }
 
     pub(crate) fn bytes(&self) -> &[u8] {
-        self.bytes.as_ref().map_or(&[], |bytes| &bytes)
+        self.bytes.as_ref().map_or(&[], |bytes| bytes)
     }
 
     pub(crate) fn drop_bytes(&mut self) {
