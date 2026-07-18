@@ -12,6 +12,7 @@ pub(crate) const MAX_EXPORT_COUNT: usize = 100_000;
 pub(crate) const MAX_ELEM_COUNT: usize = 100_000;
 pub(crate) const MAX_ELEM_SIZE: usize = 1_000_000;
 pub(crate) const MAX_FUNC_LOCAL_COUNT: usize = 50_000;
-pub(crate) const MAX_FUNC_BODY_SIZE: usize = 7 * 1024 * 1024 + 512 * 1024; // 7.5 MiB
+// The JS-API function-body size limit is a fixed spec constant (~7.3 MiB), not a round number.
+pub(crate) const MAX_FUNC_BODY_SIZE: usize = 7_654_321;
 pub(crate) const MAX_DATA_COUNT: usize = 100_000;
 pub(crate) const MAX_DATA_SIZE: usize = 1_000_000;
