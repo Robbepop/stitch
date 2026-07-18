@@ -1,7 +1,7 @@
 [package]
 name = "makepad-stitch"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 description = "An experimental Wasm interpreter written in Rust that is designed to be very fast and lightweight."
 license = "MIT"
 readme = "README.md"
