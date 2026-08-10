@@ -439,12 +439,10 @@ threaded_instr!(br_if_z_s(
     // Read operands
     let (cond, ip): (u32, _) = read_stack(ip, sp);
     let (target, ip) = read_imm(ip);
-
-    // Branch to target if zero
-    let ip = if cond == 0 { target } else { ip };
-
-    // Execute next instruction
-    next_instr(ip, sp, md, ms, ix, sx, dx, cx)
+    match cond {
+        0 => next_instr(target, sp, md, ms, ix, sx, dx, cx),
+        _ => next_instr(ip, sp, md, ms, ix, sx, dx, cx),
+    }
 });
 
 threaded_instr!(br_if_z_r(
@@ -460,12 +458,10 @@ threaded_instr!(br_if_z_r(
     // Read operands
     let cond: u32 = read_reg(ix, sx, dx);
     let (target, ip) = read_imm(ip);
-
-    // Branch to target if zero
-    let ip = if cond == 0 { target } else { ip };
-
-    // Execute next instruction
-    next_instr(ip, sp, md, ms, ix, sx, dx, cx)
+    match cond {
+        0 => next_instr(target, sp, md, ms, ix, sx, dx, cx),
+        _ => next_instr(ip, sp, md, ms, ix, sx, dx, cx),
+    }
 });
 
 threaded_instr!(br_if_nz_s(
@@ -481,12 +477,10 @@ threaded_instr!(br_if_nz_s(
     // Read operands
     let (cond, ip): (u32, _) = read_stack(ip, sp);
     let (target, ip) = read_imm(ip);
-
-    // Branch to target if not zero
-    let ip = if cond != 0 { target } else { ip };
-
-    // Execute next instruction
-    next_instr(ip, sp, md, ms, ix, sx, dx, cx)
+    match cond {
+        0 => next_instr(ip, sp, md, ms, ix, sx, dx, cx),
+        _ => next_instr(target, sp, md, ms, ix, sx, dx, cx),
+    }
 });
 
 threaded_instr!(br_if_nz_r(
@@ -502,12 +496,10 @@ threaded_instr!(br_if_nz_r(
     // Read operands
     let cond: u32 = read_reg(ix, sx, dx);
     let (target, ip) = read_imm(ip);
-
-    // Branch to target if not zero
-    let ip = if cond != 0 { target } else { ip };
-
-    // Execute next instruction
-    next_instr(ip, sp, md, ms, ix, sx, dx, cx)
+    match cond {
+        0 => next_instr(ip, sp, md, ms, ix, sx, dx, cx),
+        _ => next_instr(target, sp, md, ms, ix, sx, dx, cx),
+    }
 });
 
 threaded_instr!(br_table_s(
